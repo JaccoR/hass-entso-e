@@ -1,0 +1,9 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "description": "Geen authenticatie of configuratie nodig."
+            }
+        }
+    }
+}

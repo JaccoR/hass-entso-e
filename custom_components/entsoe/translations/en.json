@@ -1,0 +1,9 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "description": "No authentication or configuration needed."
+            }
+        }
+    }
+}

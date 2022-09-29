@@ -3,7 +3,7 @@ Integration for Home Assistant to fetch energy prices and information from the E
 Day ahead energy prices are added as a sensor and can be used in automations to switch equipment.
  
 ### Disclaimer
-This integration is in a very early state and a work in progress. For now, only dutch energy prices can be fetched.
+This integration is in a very early state and a work in progress. For now, only dutch energy prices can be fetched, i'm working on adding all EU countries.
 
 #### API Access
 You need an ENTSO-e Restful API key for this integration. To request this API key, register on the [Transparency Platform](https://transparency.entsoe.eu/) and send an email to transparency@entsoe.eu with “Restful API access” in the subject line.

@@ -1,10 +1,10 @@
 # Home Assistant ENSO-e Transparency Platform Prices
-Integration for Home Assistant to fetch day ahead energy prices from the ENTSO-e Transparency Platform (transparency.entsoe.eu/).
+Integration for Home Assistant to fetch day ahead energy prices from the ENTSO-e Transparency Platform (https://transparency.entsoe.eu/).
 Energy prices are added as a sensor and can be used in automations to switch equipment.
  
 ### Disclaimer
 This integration is in a very early state. For now, only dutch energy prices can be fetched.
-You need an ENTSO-e API key for this integration. You can get this API key for free by registering at 6transparency.entsoe.eu/.
+You need an ENTSO-e API key for this integration. You can get this API key for free by registering at https://transparency.entsoe.eu/.
 
 ### Sensors
 The integration adds the following sensors:

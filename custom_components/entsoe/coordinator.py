@@ -18,10 +18,9 @@ from .const import API_KEY
 class EntsoeCoordinator(DataUpdateCoordinator):
     """Get the latest data and update the states."""
 
-    def __init__(self, hass: HomeAssistant, websession) -> None:
+    def __init__(self, hass: HomeAssistant) -> None:
         """Initialize the data object."""
         self.hass = hass
-        self.websession = websession
 
         logger = logging.getLogger(__name__)
         super().__init__(

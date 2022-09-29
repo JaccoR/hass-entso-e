@@ -18,8 +18,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up the ENTSO-e prices component from a config entry."""
 
     # Initialise the coordinator and save it as domain-data
-    web_session_client = async_get_clientsession(hass)
-    entsoe_coordinator = EntsoeCoordinator(hass, web_session_client)
+    entsoe_coordinator = EntsoeCoordinator(hass)
 
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = {

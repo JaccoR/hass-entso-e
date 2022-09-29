@@ -16,7 +16,7 @@ ATTRIBUTION = "Data provided by ENTSO-e Transparency Platform"
 DOMAIN = "entsoe"
 ICON = "mdi:currency-eur"
 UNIQUE_ID = f"{DOMAIN}_component"
-COMPONENT_TITLE = "ENTSO-e Transparency Platform Prices"
+COMPONENT_TITLE = "ENTSO-e Transparency Platform"
 CONF_API_KEY = "api_key"
 CONF_COORDINATOR = "coordinator"
 

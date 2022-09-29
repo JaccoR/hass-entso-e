@@ -5,15 +5,15 @@ from datetime import timedelta
 import pandas as pd
 from entsoe import EntsoePandasClient
 import logging
-from typing import List, Tuple
+from typing import List
+from pytz import HOUR
 
-import aiohttp
+from zeroconf import millis_to_seconds
 
-from homeassistant.config_entries import ConfigEntry
+
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt
-from .const import CONF_API_KEY
 
 
 class EntsoeCoordinator(DataUpdateCoordinator):
@@ -36,36 +36,36 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         """Get the latest data from ENTSO-e"""
         self.logger.debug("Fetching ENTSO-e data")
 
-        # We request data for today up until the day after tomorrow.
-        # This is to ensure we always request all available data.
-        today = pd.Timestamp(dt.as_local(dt.start_of_local_day()))
-        self.logger.debug(today)
-        tomorrow = pd.Timestamp(dt.as_local(dt.start_of_local_day()+timedelta(days=1)))
-        self.logger.debug(tomorrow)
+        time_zone = dt.now().tzinfo
+        # We request data for today up until tomorrow.
+        today = pd.Timestamp.now(tz=str(time_zone)).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
 
-        # Fetch data for today and tomorrow separately,
-        # because the gas prices response only contains data for the first day of the query
+        tomorrow = today + pd.Timedelta(days=1)
+
         data_today = await self.fetchprices(today, tomorrow)
 
         return {
             "marketPricesElectricity": data_today,
         }
 
-    def update(self, start_date, end_date):
-        client = EntsoePandasClient(api_key=self.api_key)
-        return client.query_day_ahead_prices("NL", start=start_date, end=end_date)
-
     async def fetchprices(self, start_date, end_date):
         try:
             resp = await self.hass.async_add_executor_job(
-                self.update, start_date, end_date
+                self.api_update, start_date, end_date
             )
 
             data = resp.to_dict()
             return data
 
-        except (asyncio.TimeoutError, aiohttp.ClientError, KeyError) as error:
+        except (asyncio.TimeoutError, KeyError) as error:
             raise UpdateFailed(f"Fetching energy price data failed: {error}") from error
+
+    def api_update(self, start_date, end_date):
+        client = EntsoePandasClient(api_key=self.api_key)
+
+        return client.query_day_ahead_prices("NL", start=start_date, end=end_date)
 
     def processed_data(self):
         return {

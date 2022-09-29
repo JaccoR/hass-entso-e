@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime, timedelta
+from datetime import timedelta
 import pandas as pd
 from entsoe import EntsoePandasClient
 import logging
@@ -37,8 +37,10 @@ class EntsoeCoordinator(DataUpdateCoordinator):
 
         # We request data for today up until the day after tomorrow.
         # This is to ensure we always request all available data.
-        today = pd.Timestamp(dt.start_of_local_day())
-        tomorrow = today + pd.Timedelta(days=1)
+        today = pd.Timestamp(dt.as_local(dt.start_of_local_day()))
+        self.logger.debug(today)
+        tomorrow = pd.Timestamp(dt.as_local(dt.start_of_local_day()+timedelta(days=1)))
+        self.logger.debug(tomorrow)
 
         # Fetch data for today and tomorrow separately,
         # because the gas prices response only contains data for the first day of the query
@@ -59,29 +61,21 @@ class EntsoeCoordinator(DataUpdateCoordinator):
             )
 
             data = resp.to_dict()
-            self.logger.debug("werkt dit?????")
-            self.logger.debug(data)
             return data
 
         except (asyncio.TimeoutError, aiohttp.ClientError, KeyError) as error:
             raise UpdateFailed(f"Fetching energy price data failed: {error}") from error
 
     def processed_data(self):
-        self.logger.debug("hierzo entsoe")
-
         return {
-            'elec': self.get_current_hourprices(self.data['marketPricesElectricity']),
-            'today_elec': self.get_hourprices(self.data['marketPricesElectricity'])
+            "elec": self.get_current_hourprices(self.data["marketPricesElectricity"]),
+            "today_elec": self.get_hourprices(self.data["marketPricesElectricity"]),
         }
 
     def get_current_hourprices(self, hourprices) -> int:
         for hour, price in hourprices.items():
             if hour <= dt.utcnow() < hour + timedelta(hours=1):
-                self.logger.debug("entsoe current prices")
-                self.logger.debug(price)
                 return price
 
     def get_hourprices(self, hourprices) -> List:
-        self.logger.debug("werkt dit??")
-        self.logger.debug(list(hourprices.values()))
         return list(hourprices.values())

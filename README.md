@@ -5,6 +5,13 @@ Energy prices are added as a sensor and can be used in automations to switch equ
 ### Disclaimer
 This integration is in a very early state. For now, only dutch energy prices can be fetched.
 
+### Sensors
+The integration adds the following sensors:
+- Average Electricity Price Today
+- Highest Electricity Price Today
+- Lowest Electricity Price Today
+- Current Electricity Price
+
 ## Installation
 
 ### Manual

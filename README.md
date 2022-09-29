@@ -4,7 +4,9 @@ Energy prices are added as a sensor and can be used in automations to switch equ
  
 ### Disclaimer
 This integration is in a very early state. For now, only dutch energy prices can be fetched.
-You need an ENTSO-e API key for this integration. You can get this API key for free by registering at https://transparency.entsoe.eu/.
+
+#### API Access
+You need an ENTSO-e API key for this integration. To request the key to the ENTSO-e Restful API, register on the [Transparency Platform](https://transparency.entsoe.eu/) and send an email to transparency@entsoe.eu with “Restful API access” in the subject line. The ENTSO-E Helpdesk will make their best efforts to respond to your request within 3 working days.
 
 ### Sensors
 The integration adds the following sensors:

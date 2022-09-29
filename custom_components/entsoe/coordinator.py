@@ -9,18 +9,20 @@ from typing import List, Tuple
 
 import aiohttp
 
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt
-from .const import API_KEY
+from .const import CONF_API_KEY
 
 
 class EntsoeCoordinator(DataUpdateCoordinator):
     """Get the latest data and update the states."""
 
-    def __init__(self, hass: HomeAssistant) -> None:
+    def __init__(self, hass: HomeAssistant, api_key) -> None:
         """Initialize the data object."""
         self.hass = hass
+        self.api_key = api_key
 
         logger = logging.getLogger(__name__)
         super().__init__(
@@ -50,7 +52,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         }
 
     def update(self, start_date, end_date):
-        client = EntsoePandasClient(api_key=API_KEY)
+        client = EntsoePandasClient(api_key=self.api_key)
         return client.query_day_ahead_prices("NL", start=start_date, end=end_date)
 
     async def fetchprices(self, start_date, end_date):

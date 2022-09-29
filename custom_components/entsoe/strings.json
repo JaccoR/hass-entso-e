@@ -2,7 +2,20 @@
   "config": {
     "step": {
       "user": {
-          "description": "No authentication or configuration needed."
+          "description": "Add your ENTSO-e Transparency Platform API Key",
+          "data": {
+            "api_key": "API Key"
+          }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "description": "These values allow tweaking the Solar.Forecast result. Please refer to the documentation if a field is unclear.",
+        "data": {
+          "api_key": "API Key"
+        }
       }
     }
   }

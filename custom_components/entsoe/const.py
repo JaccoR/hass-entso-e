@@ -14,11 +14,10 @@ from homeassistant.helpers.typing import StateType
 
 ATTRIBUTION = "Data provided by ENTSO-e Transparency Platform"
 DOMAIN = "entsoe"
-API_KEY = "1ca8a4ef-dd3a-4b64-94f9-56431b041374"
 ICON = "mdi:currency-eur"
 UNIQUE_ID = f"{DOMAIN}_component"
 COMPONENT_TITLE = "ENTSO-e Transparency Platform Prices"
-
+CONF_API_KEY = "api_key"
 CONF_COORDINATOR = "coordinator"
 
 

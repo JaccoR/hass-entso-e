@@ -1,9 +1,12 @@
 {
     "config": {
-        "step": {
-            "user": {
-                "description": "No authentication or configuration needed."
+      "step": {
+        "user": {
+            "description": "Add your ENTSO-e Transparency Platform API Key",
+            "data": {
+              "api_key": "API Key"
             }
         }
+      }
     }
-}
+  }

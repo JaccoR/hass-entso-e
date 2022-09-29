@@ -6,4 +6,9 @@ Energy prices are added as a sensor and can be used in automations to switch equ
 This integration is in a very early state. For now, only dutch energy prices can be fetched.
 
 ## Installation
+
+### Manual
 Download this repository and place the contents of "custom_components" in the custom_components map of your Home Assistant installation. Add the integration through your settings and you're set!
+
+### HACS
+Add this repository to HACS and install

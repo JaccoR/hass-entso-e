@@ -95,7 +95,9 @@ class EntsoeOptionFlowHandler(OptionsFlow):
                     vol.Required(
                         CONF_COUNTRY,
                         default=self.config_entry.options[CONF_COUNTRY],
-                    ): vol.All(vol.Coerce(str)),
+                    ): selector.SelectSelector(
+                        selector.SelectSelectorConfig(options=TARGET_COUNTRY_OPTIONS),
+                    ),
                 }
             ),
         )

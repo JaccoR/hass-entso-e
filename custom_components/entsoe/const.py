@@ -18,6 +18,7 @@ ICON = "mdi:currency-eur"
 UNIQUE_ID = f"{DOMAIN}_component"
 COMPONENT_TITLE = "ENTSO-e Transparency Platform"
 CONF_API_KEY = "api_key"
+CONF_COUNTRY = "country"
 CONF_COORDINATOR = "coordinator"
 
 

@@ -1,9 +1,24 @@
 {
-    "config": {
-        "step": {
-            "user": {
-                "description": "Geen authenticatie of configuratie nodig."
-            }
-        }
+  "config": {
+    "step": {
+      "user": {
+          "description": "Voeg je ENTSO-e Transparency Platform API Key en land toe",
+          "data": {
+            "api_key": "Je API key",
+            "country": "Land waar de data vandaan komt"
+          }
+      }
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "description": "Voeg je ENTSO-e Transparency Platform API Key en land toe",
+        "data": {
+          "api_key": "Je API key",
+          "country": "Land waar de data vandaan komt"
+        }
+      }
+    }
+  }
 }

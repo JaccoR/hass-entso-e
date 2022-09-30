@@ -6,9 +6,7 @@ import pandas as pd
 from entsoe import EntsoePandasClient
 import logging
 from typing import List
-from pytz import HOUR
 
-from zeroconf import millis_to_seconds
 
 
 from homeassistant.core import HomeAssistant
@@ -19,10 +17,11 @@ from homeassistant.util import dt
 class EntsoeCoordinator(DataUpdateCoordinator):
     """Get the latest data and update the states."""
 
-    def __init__(self, hass: HomeAssistant, api_key) -> None:
+    def __init__(self, hass: HomeAssistant, api_key, country) -> None:
         """Initialize the data object."""
         self.hass = hass
         self.api_key = api_key
+        self.country = country
 
         logger = logging.getLogger(__name__)
         super().__init__(
@@ -65,7 +64,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
     def api_update(self, start_date, end_date):
         client = EntsoePandasClient(api_key=self.api_key)
 
-        return client.query_day_ahead_prices("NL", start=start_date, end=end_date)
+        return client.query_day_ahead_prices(self.country, start=start_date, end=end_date)
 
     def processed_data(self):
         return {

@@ -9,10 +9,10 @@ from homeassistant.config_entries import ConfigEntry, ConfigFlow, OptionsFlow
 from homeassistant.const import CONF_API_KEY
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
-import homeassistant.helpers.config_validation as cv
 
 from .const import (
     CONF_API_KEY,
+    CONF_COUNTRY,
     DOMAIN,
     COMPONENT_TITLE,
     UNIQUE_ID
@@ -45,6 +45,7 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
                 data={},
                 options={
                     CONF_API_KEY: user_input[CONF_API_KEY],
+                    CONF_COUNTRY: user_input[CONF_COUNTRY]
                 },
             )
 
@@ -57,6 +58,8 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
             data_schema=vol.Schema(
                 {
                     vol.Required(CONF_API_KEY): vol.All(
+                        vol.Coerce(str)),
+                    vol.Required(CONF_COUNTRY): vol.All(
                         vol.Coerce(str))
                 },
             ),
@@ -86,6 +89,10 @@ class EntsoeOptionFlowHandler(OptionsFlow):
                     vol.Required(
                         CONF_API_KEY,
                         default=self.config_entry.options[CONF_API_KEY],
+                    ): vol.All(vol.Coerce(str)),
+                    vol.Required(
+                        CONF_COUNTRY,
+                        default=self.config_entry.options[CONF_COUNTRY],
                     ): vol.All(vol.Coerce(str)),
                 }
             ),

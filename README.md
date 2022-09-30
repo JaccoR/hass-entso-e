@@ -17,7 +17,7 @@ The integration adds the following sensors:
 ## Installation
 
 ### Manual
-Download this repository and place the contents of "custom_components" in the custom_components map of your Home Assistant installation. Restart Home Assistant and add the integration through your settings and you're set!
+Download this repository and place the contents of "custom_components" in the custom_components map of your Home Assistant installation. Restart Home Assistant and add the integration through your settings. Add your API-key and country code (e.g. Netherlands -> NL, Germany -> GE) and the sensors will automatically be added to your system.
 
 ### HACS
-Add https://github.com/JaccoR/hass-entso-e to your HACS custom repositories and install through HACS. Restart Home Assistant and add the integration through your settings and you're set!
+Add https://github.com/JaccoR/hass-entso-e to your HACS custom repositories and install through HACS. Restart Home Assistant and add the integration through your settings. Add your API-key and country code (e.g. Netherlands -> NL, Germany -> GE) and the sensors will automatically be added to your system.

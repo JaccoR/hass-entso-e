@@ -15,7 +15,8 @@ from .const import (
     CONF_COUNTRY,
     DOMAIN,
     COMPONENT_TITLE,
-    UNIQUE_ID
+    UNIQUE_ID,
+    TARGET_COUNTRY_OPTIONS
 )
 
 
@@ -59,8 +60,9 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
                 {
                     vol.Required(CONF_API_KEY): vol.All(
                         vol.Coerce(str)),
-                    vol.Required(CONF_COUNTRY): vol.All(
-                        vol.Coerce(str))
+                    vol.Required(CONF_COUNTRY): selector.SelectSelector(
+                        selector.SelectSelectorConfig(options=TARGET_COUNTRY_OPTIONS),
+                    )
                 },
             ),
         )
@@ -93,7 +95,9 @@ class EntsoeOptionFlowHandler(OptionsFlow):
                     vol.Required(
                         CONF_COUNTRY,
                         default=self.config_entry.options[CONF_COUNTRY],
-                    ): vol.All(vol.Coerce(str)),
+                    ): selector.SelectSelector(
+                        selector.SelectSelectorConfig(options=TARGET_COUNTRY_OPTIONS),
+                    ),
                 }
             ),
         )

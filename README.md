@@ -13,6 +13,8 @@ The integration adds the following sensors:
 - Highest Day-Ahead Electricity Price Today
 - Lowest Day-Ahead Electricity Price Today
 - Current Day-Ahead Electricity Price
+- Current Percentage Of Highest Electricity Price Today
+- Next Hour Day-Ahead Electricity Price
 
 ## Installation
 

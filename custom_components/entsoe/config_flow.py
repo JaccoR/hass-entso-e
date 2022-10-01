@@ -8,7 +8,7 @@ import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry, ConfigFlow, OptionsFlow
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
-from homeassistant.helpers.selector import SelectOptionDict, SelectSelectorConfig, SelectSelector
+from homeassistant.helpers.selector import SelectSelectorConfig, SelectSelector
 
 from .const import (
     CONF_API_KEY,
@@ -92,11 +92,8 @@ class EntsoeOptionFlowHandler(OptionsFlow):
                         CONF_API_KEY,
                         default=self.config_entry.options[CONF_API_KEY],
                     ): vol.All(vol.Coerce(str)),
-                    vol.Required(
-                        CONF_COUNTRY,
-                        default=self.config_entry.options[CONF_COUNTRY],
-                    ): selector.SelectSelector(
-                        selector.SelectSelectorConfig(options=TARGET_COUNTRY_OPTIONS),
+                    vol.Required(CONF_COUNTRY): SelectSelector(
+                        SelectSelectorConfig(options=TARGET_COUNTRY_OPTIONS),
                     ),
                 }
             ),

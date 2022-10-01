@@ -68,14 +68,28 @@ class EntsoeCoordinator(DataUpdateCoordinator):
 
     def processed_data(self):
         return {
-            "elec": self.get_current_hourprices(self.data["marketPricesElectricity"]),
+            "elec": self.get_current_hourprice(self.data["marketPricesElectricity"]),
+            "elec_next_hour": self.get_next_hourprice(self.data["marketPricesElectricity"]),
             "today_elec": self.get_hourprices(self.data["marketPricesElectricity"]),
+            "time_min_price": self.get_min_time(self.data["marketPricesElectricity"]),
+            "time_max_price": self.get_max_time(self.data["marketPricesElectricity"])
         }
+    def get_next_hourprice(self, hourprices) -> int:
+        for hour, price in hourprices.items():
+            if hour - timedelta(hours=1) <= dt.utcnow() < hour:
+                return price
 
-    def get_current_hourprices(self, hourprices) -> int:
+    def get_current_hourprice(self, hourprices) -> int:
         for hour, price in hourprices.items():
             if hour <= dt.utcnow() < hour + timedelta(hours=1):
                 return price
 
     def get_hourprices(self, hourprices) -> List:
         return list(hourprices.values())
+
+    def get_max_time(self, hourprices):
+        max(hourprices, key=hourprices.get)
+
+    def get_min_time(self, hourprices):
+        min(hourprices, key=hourprices.get)
+

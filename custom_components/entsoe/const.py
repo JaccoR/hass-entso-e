@@ -6,10 +6,13 @@ from homeassistant.helpers.selector import SelectOptionDict
 
 from homeassistant.components.sensor import (
     SensorEntityDescription,
+    SensorDeviceClass
 )
 from homeassistant.const import (
     CURRENCY_EURO,
     ENERGY_KILO_WATT_HOUR,
+    PERCENTAGE,
+
 )
 from homeassistant.helpers.typing import StateType
 
@@ -74,10 +77,16 @@ class EntsoeEntityDescription(SensorEntityDescription):
 
 SENSOR_TYPES: tuple[EntsoeEntityDescription, ...] = (
     EntsoeEntityDescription(
-        key="elec_market",
+        key="elec_current",
         name="Current electricity market price",
         native_unit_of_measurement=f"{CURRENCY_EURO}/{ENERGY_KILO_WATT_HOUR}",
         value_fn=lambda data: data['elec'] / 1000,
+    ),
+    EntsoeEntityDescription(
+        key="elec_next_hour",
+        name="Next hour electricity market price",
+        native_unit_of_measurement=f"{CURRENCY_EURO}/{ENERGY_KILO_WATT_HOUR}",
+        value_fn=lambda data: data['elec_next_hour'] / 1000,
     ),
     EntsoeEntityDescription(
         key="elec_min",
@@ -96,5 +105,11 @@ SENSOR_TYPES: tuple[EntsoeEntityDescription, ...] = (
         name="Average electricity price today",
         native_unit_of_measurement=f"{CURRENCY_EURO}/{ENERGY_KILO_WATT_HOUR}",
         value_fn=lambda data: round(sum(data['today_elec']) / len(data['today_elec']), 5)/1000
+    ),
+    EntsoeEntityDescription(
+        key="percentage_of_max",
+        name="Current percentage of max electricity price today",
+        native_unit_of_measurement=f"{PERCENTAGE}",
+        value_fn=lambda data: round( data["elec"] / max(data['today_elec']) * 100, 1)
     )
 )

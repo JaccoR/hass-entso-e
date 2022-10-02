@@ -1,4 +1,4 @@
-# Home Assistant ENSO-e Transparency Platform Prices
+# Home Assistant ENSO-e Transparency Platform Energy Prices
 Custom component for Home Assistant to fetch energy prices and information from the ENTSO-e Transparency Platform (https://transparency.entsoe.eu/).
 Day ahead energy prices are added as a sensor and can be used in automations to switch equipment.
 

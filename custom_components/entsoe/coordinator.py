@@ -5,14 +5,10 @@ from datetime import timedelta
 import pandas as pd
 from entsoe import EntsoePandasClient
 import logging
-from typing import List
-
-
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt
-
 
 class EntsoeCoordinator(DataUpdateCoordinator):
     """Get the latest data and update the states."""
@@ -38,21 +34,21 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         time_zone = dt.now().tzinfo
         # We request data for today up until tomorrow.
         today = pd.Timestamp.now(tz=str(time_zone)).replace(
-            hour=0, minute=0, second=0, microsecond=0
+            hour=0, minute=0, second=0
         )
 
         tomorrow = today + pd.Timedelta(days=1)
 
-        data_today = await self.fetchprices(today, tomorrow)
+        data_today = await self.fetch_prices(today, tomorrow)
 
         return {
             "marketPricesElectricity": data_today,
         }
 
-    async def fetchprices(self, start_date, end_date):
+    async def fetch_prices(self, start_date, end_date):
         try:
             resp = await self.hass.async_add_executor_job(
-                self.api_update, start_date, end_date
+                self.api_update, start_date, end_date, self.api_key
             )
 
             data = resp.to_dict()
@@ -61,8 +57,8 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         except (asyncio.TimeoutError, KeyError) as error:
             raise UpdateFailed(f"Fetching energy price data failed: {error}") from error
 
-    def api_update(self, start_date, end_date):
-        client = EntsoePandasClient(api_key=self.api_key)
+    def api_update(self, start_date, end_date, api_key):
+        client = EntsoePandasClient(api_key=api_key)
 
         return client.query_day_ahead_prices(self.country, start=start_date, end=end_date)
 
@@ -84,12 +80,12 @@ class EntsoeCoordinator(DataUpdateCoordinator):
             if hour <= dt.utcnow() < hour + timedelta(hours=1):
                 return price
 
-    def get_hourprices(self, hourprices) -> List:
+    def get_hourprices(self, hourprices) -> list:
         return list(hourprices.values())
 
     def get_max_time(self, hourprices):
-        max(hourprices, key=hourprices.get)
+        return max(hourprices, key=hourprices.get)
 
     def get_min_time(self, hourprices):
-        min(hourprices, key=hourprices.get)
+        return min(hourprices, key=hourprices.get)
 

@@ -5,7 +5,7 @@
           "description": "Please add the ENTSO-e Transparency Platform API Key and country",
           "data": {
             "api_key": "Your API Key",
-            "country": "Country to get data from"
+            "country": "Country"
           }
       }
     }
@@ -16,7 +16,7 @@
         "description": "Please add the ENTSO-e Transparency Platform API Key and country",
         "data": {
           "api_key": "Your API Key",
-          "country": "Country to get data from"
+          "country": "Country"
         }
       }
     }

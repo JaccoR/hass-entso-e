@@ -5,7 +5,7 @@
           "description": "Voeg je ENTSO-e Transparency Platform API Key en land toe",
           "data": {
             "api_key": "Je API key",
-            "country": "Land om gegevens van op te halen"
+            "country": "Land"
           }
       }
     }
@@ -16,7 +16,7 @@
         "description": "Voeg je ENTSO-e Transparency Platform API Key en land toe",
         "data": {
           "api_key": "Je API key",
-          "country": "Land om gegevens van op te halen"
+          "country": "Land"
         }
       }
     }

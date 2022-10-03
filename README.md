@@ -25,4 +25,4 @@ Download this repository and place the contents of `custom_components` in your o
 
 ### HACS
 
-Add https://github.com/JaccoR/hass-entso-e to your HACS custom repositories by clicking on the button above and install through HACS. Restart Home Assistant and add the integration through your settings. Add your API-key and country and the sensors will automatically be added to your system.
+Add https://github.com/JaccoR/hass-entso-e to your HACS custom repositories and install through HACS. Restart Home Assistant and add the integration through your settings. Add your API-key and country and the sensors will automatically be added to your system.

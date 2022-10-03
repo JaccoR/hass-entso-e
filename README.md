@@ -25,6 +25,6 @@ Download this repository and place the contents of `custom_components` in your o
 
 Add https://github.com/JaccoR/hass-entso-e to your HACS custom repositories and install through HACS. Restart Home Assistant and add the integration through your settings. Add your API-key and country and the sensors will automatically be added to your system.
 
-#### Disclaimer
+#### Updates
 
 The integration is in an early state and receives a lot of updates. If you already setup this integration and encounter an error after updating, please try redoing the above installation steps. 

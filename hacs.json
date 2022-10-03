@@ -1,6 +1,6 @@
 {
 	"name": "ENTSO-e Transparency Platform",
 	"domains": "sensor",
-	"country":["AL","AT","BE","BA","BG","HR","CY","CZ","DK","EE","FI","FR","GE","DE","GR""HU","IE","IT","XK","LV","LT","MT","MD","ME","NL","MK","NO","PL","PT","RO","RS","SK","SI","ES","SE","CH","TR","UA","UK"],
+	"country": ["AL","AT","BE","BA","BG","HR","CY","CZ","DK","EE","FI","FR","GE","DE","GR","HU","IE","IT","XK","LV","LT","MT","MD","ME","NL","MK","NO","PL","PT","RO","RS","SK","SI","ES","SE","CH","TR","UA","UK"],
 	"render_readme": true
 }

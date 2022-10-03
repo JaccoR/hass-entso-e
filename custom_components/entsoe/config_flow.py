@@ -12,11 +12,11 @@ from homeassistant.helpers.selector import SelectSelectorConfig, SelectSelector
 
 from .const import (
     CONF_API_KEY,
-    CONF_COUNTRY,
+    CONF_AREA,
     DOMAIN,
     COMPONENT_TITLE,
     UNIQUE_ID,
-    TARGET_COUNTRY_OPTIONS
+    TARGET_AREA_OPTIONS
 )
 
 
@@ -46,7 +46,7 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
                 data={},
                 options={
                     CONF_API_KEY: user_input[CONF_API_KEY],
-                    CONF_COUNTRY: user_input[CONF_COUNTRY]
+                    CONF_AREA: user_input[CONF_AREA]
                 },
             )
 
@@ -60,8 +60,8 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
                 {
                     vol.Required(CONF_API_KEY): vol.All(
                         vol.Coerce(str)),
-                    vol.Required(CONF_COUNTRY): SelectSelector(
-                        SelectSelectorConfig(options=TARGET_COUNTRY_OPTIONS),
+                    vol.Required(CONF_AREA): SelectSelector(
+                        SelectSelectorConfig(options=TARGET_AREA_OPTIONS),
                     )
                 },
             ),
@@ -92,8 +92,8 @@ class EntsoeOptionFlowHandler(OptionsFlow):
                         CONF_API_KEY,
                         default=self.config_entry.options[CONF_API_KEY],
                     ): vol.All(vol.Coerce(str)),
-                    vol.Required(CONF_COUNTRY): SelectSelector(
-                        SelectSelectorConfig(options=TARGET_COUNTRY_OPTIONS),
+                    vol.Required(CONF_AREA): SelectSelector(
+                        SelectSelectorConfig(options=TARGET_AREA_OPTIONS),
                     ),
                 }
             ),

@@ -10,14 +10,15 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt
 
+
 class EntsoeCoordinator(DataUpdateCoordinator):
     """Get the latest data and update the states."""
 
-    def __init__(self, hass: HomeAssistant, api_key, country) -> None:
+    def __init__(self, hass: HomeAssistant, api_key, area) -> None:
         """Initialize the data object."""
         self.hass = hass
         self.api_key = api_key
-        self.country = country
+        self.area = area
 
         logger = logging.getLogger(__name__)
         super().__init__(
@@ -33,9 +34,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
 
         time_zone = dt.now().tzinfo
         # We request data for today up until tomorrow.
-        today = pd.Timestamp.now(tz=str(time_zone)).replace(
-            hour=0, minute=0, second=0
-        )
+        today = pd.Timestamp.now(tz=str(time_zone)).replace(hour=0, minute=0, second=0)
 
         tomorrow = today + pd.Timedelta(days=1)
 
@@ -60,16 +59,21 @@ class EntsoeCoordinator(DataUpdateCoordinator):
     def api_update(self, start_date, end_date, api_key):
         client = EntsoePandasClient(api_key=api_key)
 
-        return client.query_day_ahead_prices(self.country, start=start_date, end=end_date)
+        return client.query_day_ahead_prices(
+            country_code=self.area, start=start_date, end=end_date
+        )
 
     def processed_data(self):
         return {
             "elec": self.get_current_hourprice(self.data["marketPricesElectricity"]),
-            "elec_next_hour": self.get_next_hourprice(self.data["marketPricesElectricity"]),
+            "elec_next_hour": self.get_next_hourprice(
+                self.data["marketPricesElectricity"]
+            ),
             "today_elec": self.get_hourprices(self.data["marketPricesElectricity"]),
             "time_min_price": self.get_min_time(self.data["marketPricesElectricity"]),
-            "time_max_price": self.get_max_time(self.data["marketPricesElectricity"])
+            "time_max_price": self.get_max_time(self.data["marketPricesElectricity"]),
         }
+
     def get_next_hourprice(self, hourprices) -> int:
         for hour, price in hourprices.items():
             if hour - timedelta(hours=1) <= dt.utcnow() < hour:
@@ -88,4 +92,3 @@ class EntsoeCoordinator(DataUpdateCoordinator):
 
     def get_min_time(self, hourprices):
         return min(hourprices, key=hourprices.get)
-

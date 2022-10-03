@@ -2,10 +2,10 @@
   "config": {
     "step": {
       "user": {
-          "description": "Please add the ENTSO-e Transparency Platform API Key and country",
+          "description": "Please add the ENTSO-e Transparency Platform API key and area",
           "data": {
             "api_key": "Your API Key",
-            "country": "Country"
+            "area": "Area"
           }
       }
     }
@@ -13,10 +13,10 @@
   "options": {
     "step": {
       "init": {
-        "description": "Please add the ENTSO-e Transparency Platform API Key and country",
+        "description": "Please add the ENTSO-e Transparency Platform API key and area",
         "data": {
           "api_key": "Your API Key",
-          "country": "Country"
+          "area": "Area"
         }
       }
     }

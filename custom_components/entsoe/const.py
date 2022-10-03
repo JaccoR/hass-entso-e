@@ -35,7 +35,7 @@ TARGET_AREA_OPTIONS = [
     SelectOptionDict(value="EE", label="Estonia"),
     SelectOptionDict(value="FI", label="Finland"),
     SelectOptionDict(value="FR", label="France"),
-    SelectOptionDict(value="GE", label="Georgia"),
+    # SelectOptionDict(value="GE", label="Georgia"),
     SelectOptionDict(value="DE_LU", label="Luxembourg"),
     SelectOptionDict(value="DE_LU", label="Germany"),
     SelectOptionDict(value="GR", label="Greece"),
@@ -87,55 +87,54 @@ class EntsoeEntityDescription(SensorEntityDescription):
 
 SENSOR_TYPES: tuple[EntsoeEntityDescription, ...] = (
     EntsoeEntityDescription(
-        key="elec_current",
+        key="current_price",
         name="Current electricity market price",
         native_unit_of_measurement=f"{CURRENCY_EURO}/{ENERGY_KILO_WATT_HOUR}",
-        value_fn=lambda data: data["elec"] / 1000,
+        value_fn=lambda data: data["current_price"],
     ),
     EntsoeEntityDescription(
-        key="elec_next_hour",
+        key="next_hour_price",
         name="Next hour electricity market price",
         native_unit_of_measurement=f"{CURRENCY_EURO}/{ENERGY_KILO_WATT_HOUR}",
-        value_fn=lambda data: data["elec_next_hour"] / 1000,
+        value_fn=lambda data: data["next_hour_price"],
     ),
     EntsoeEntityDescription(
-        key="elec_min",
+        key="min_price",
         name="Lowest energy price today",
         native_unit_of_measurement=f"{CURRENCY_EURO}/{ENERGY_KILO_WATT_HOUR}",
-        value_fn=lambda data: min(data["today_elec"]) / 1000,
+        value_fn=lambda data: data["min_price"],
     ),
     EntsoeEntityDescription(
-        key="elec_max",
+        key="max_price",
         name="Highest energy price today",
         native_unit_of_measurement=f"{CURRENCY_EURO}/{ENERGY_KILO_WATT_HOUR}",
-        value_fn=lambda data: max(data["today_elec"]) / 1000,
+        value_fn=lambda data: data["max_price"],
     ),
     EntsoeEntityDescription(
-        key="elec_avg",
+        key="avg_price",
         name="Average electricity price today",
         native_unit_of_measurement=f"{CURRENCY_EURO}/{ENERGY_KILO_WATT_HOUR}",
-        value_fn=lambda data: round(
-            sum(data["today_elec"]) / len(data["today_elec"]), 3
-        )
-        / 1000,
+        value_fn=lambda data: data["avg_price"],
     ),
     EntsoeEntityDescription(
         key="percentage_of_max",
         name="Current percentage of highest electricity price today",
         native_unit_of_measurement=f"{PERCENTAGE}",
         icon="mdi:percent",
-        value_fn=lambda data: round(data["elec"] / max(data["today_elec"]) * 100, 1),
+        value_fn=lambda data: round(
+            data["current_price"] / data["max_price"] * 100, 1
+        ),
     ),
     EntsoeEntityDescription(
         key="highest_price_time_today",
         name="Time of highest price today",
         device_class=SensorDeviceClass.TIMESTAMP,
-        value_fn=lambda data: data["time_max_price"],
+        value_fn=lambda data: data["time_max"],
     ),
     EntsoeEntityDescription(
         key="lowest_price_time_today",
         name="Time of lowest price today",
         device_class=SensorDeviceClass.TIMESTAMP,
-        value_fn=lambda data: data["time_min_price"],
+        value_fn=lambda data: data["time_min"],
     ),
 )

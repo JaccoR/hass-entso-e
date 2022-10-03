@@ -36,7 +36,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         # We request data for today up until tomorrow.
         today = pd.Timestamp.now(tz=str(time_zone)).replace(hour=0, minute=0, second=0)
 
-        tomorrow = today + pd.Timedelta(days=1)
+        tomorrow = today + pd.Timedelta(hours=23)
 
         data_today = await self.fetch_prices(today, tomorrow)
 
@@ -65,27 +65,41 @@ class EntsoeCoordinator(DataUpdateCoordinator):
 
     def processed_data(self):
         return {
-            "elec": self.get_current_hourprice(self.data["marketPricesElectricity"]),
-            "elec_next_hour": self.get_next_hourprice(
+            "current_price": self.get_current_hourprice(
                 self.data["marketPricesElectricity"]
             ),
-            "today_elec": self.get_hourprices(self.data["marketPricesElectricity"]),
-            "time_min_price": self.get_min_time(self.data["marketPricesElectricity"]),
-            "time_max_price": self.get_max_time(self.data["marketPricesElectricity"]),
+            "next_hour_price": self.get_next_hourprice(
+                self.data["marketPricesElectricity"]
+            ),
+            "min_price": self.get_min_price(self.data["marketPricesElectricity"]),
+            "max_price": self.get_max_price(self.data["marketPricesElectricity"]),
+            "avg_price": self.get_avg_price(self.data["marketPricesElectricity"]),
+            "time_min": self.get_min_time(self.data["marketPricesElectricity"]),
+            "time_max": self.get_max_time(self.data["marketPricesElectricity"]),
+            "today_prices": self.get_hourprices(self.data["marketPricesElectricity"]),
         }
 
     def get_next_hourprice(self, hourprices) -> int:
         for hour, price in hourprices.items():
             if hour - timedelta(hours=1) <= dt.utcnow() < hour:
-                return price
+                return round(price / 1000, 3)
 
     def get_current_hourprice(self, hourprices) -> int:
         for hour, price in hourprices.items():
             if hour <= dt.utcnow() < hour + timedelta(hours=1):
-                return price
+                return round(price / 1000, 3)
 
     def get_hourprices(self, hourprices) -> list:
-        return list(hourprices.values())
+        return [round(a / 1000, 3) for a in list(hourprices.values())]
+
+    def get_avg_price(self, hourprices):
+        return round(sum(hourprices.values()) / len(hourprices.values()) / 1000, 4)
+
+    def get_max_price(self, hourprices):
+        return max(hourprices.values()) / 1000
+
+    def get_min_price(self, hourprices):
+        return min(hourprices.values()) / 1000
 
     def get_max_time(self, hourprices):
         return max(hourprices, key=hourprices.get)

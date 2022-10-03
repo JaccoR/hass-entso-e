@@ -1,5 +1,5 @@
 {
-	"name": "ENTSO-e Transparency Platform",
-	"domains": "sensor",
-	"render_readme": true
+  "name": "ENTSO-e Transparency Platform",
+  "render_readme": true,
+  "country": ["AL","AT","BE","BA","BG","HR","CY","CZ","DK","EE","FI","FR","GE","DE","GR","HU","IE","IT","XK","LV","LT","MT","MD","ME","NL","MK","NO","PL","PT","RO","RS","SK","SI","ES","SE","CH","TR","UA","UK"]
 }

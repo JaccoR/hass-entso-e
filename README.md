@@ -2,8 +2,6 @@
 Custom component for Home Assistant to fetch energy prices and information of all European countries from the ENTSO-e Transparency Platform (https://transparency.entsoe.eu/).
 Day ahead energy prices are added as a sensor and can be used in automations to switch equipment. 24 Hour forecast of the energy prices is in the sensors attributes.
 
-This integration is in a very early state and a work in progress.
-
 #### API Access
 You need an ENTSO-e Restful API key for this integration. To request this API key, register on the [Transparency Platform](https://transparency.entsoe.eu/) and send an email to transparency@entsoe.eu with “Restful API access” in the subject line.
 
@@ -29,4 +27,4 @@ Add https://github.com/JaccoR/hass-entso-e to your HACS custom repositories and 
 
 #### Disclaimer
 
-If you already setup this integration and encounter an error, please try redoing the above installation steps. 
+The integration is in an early state and receives a lot of updates. If you already setup this integration and encounter an error after updating, please try redoing the above installation steps. 

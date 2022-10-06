@@ -85,18 +85,18 @@ class EntsoeCoordinator(DataUpdateCoordinator):
     def get_next_hourprice(self, hourprices) -> int:
         for hour, price in hourprices.items():
             if hour - timedelta(hours=1) <= dt.utcnow() < hour:
-                return round(price / 1000, 3)
+                return round(price / 1000, 5)
 
     def get_current_hourprice(self, hourprices) -> int:
         for hour, price in hourprices.items():
             if hour <= dt.utcnow() < hour + timedelta(hours=1):
-                return round(price / 1000, 3)
+                return round(price / 1000, 5)
 
     def get_hourprices(self, hourprices) -> list:
-        return [round(a / 1000, 3) for a in list(hourprices.values())]
+        return [round(a / 1000, 5) for a in list(hourprices.values())]
 
     def get_avg_price(self, hourprices):
-        return round(sum(hourprices.values()) / len(hourprices.values()) / 1000, 4)
+        return round(sum(hourprices.values()) / len(hourprices.values()) / 1000, 5)
 
     def get_max_price(self, hourprices):
         return max(hourprices.values()) / 1000
@@ -114,5 +114,5 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         list = []
         for hour, price in hourprices.items():
             str_hour = str(hour)
-            list.append({"time":str_hour,"price":round(price / 1000, 3)})
+            list.append({"time":str_hour,"price":round(price / 1000, 5)})
         return list

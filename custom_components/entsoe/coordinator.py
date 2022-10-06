@@ -114,5 +114,5 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         list = []
         for hour, price in hourprices.items():
             str_hour = str(hour)
-            list.append({"time":str_hour,"price":price})
+            list.append({"time":str_hour,"price":round(price / 1000, 3)})
         return list

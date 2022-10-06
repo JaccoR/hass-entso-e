@@ -77,6 +77,9 @@ class EntsoeCoordinator(DataUpdateCoordinator):
             "time_min": self.get_min_time(self.data["marketPricesElectricity"]),
             "time_max": self.get_max_time(self.data["marketPricesElectricity"]),
             "today_prices": self.get_hourprices(self.data["marketPricesElectricity"]),
+            "timestamped_prices": self.get_timestamped_prices(
+                self.data["marketPricesElectricity"]
+            ),
         }
 
     def get_next_hourprice(self, hourprices) -> int:
@@ -106,3 +109,10 @@ class EntsoeCoordinator(DataUpdateCoordinator):
 
     def get_min_time(self, hourprices):
         return min(hourprices, key=hourprices.get)
+
+    def get_timestamped_prices(self, hourprices):
+        list = []
+        for hour, price in hourprices.items():
+            str_hour = str(hour)
+            list.append({"time":str_hour,"price":price})
+        return list

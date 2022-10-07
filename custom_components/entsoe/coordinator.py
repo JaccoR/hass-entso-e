@@ -36,12 +36,16 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         # We request data for today up until tomorrow.
         today = pd.Timestamp.now(tz=str(time_zone)).replace(hour=0, minute=0, second=0)
 
-        tomorrow = today + pd.Timedelta(hours=23)
+        tomorrow = today + pd.Timedelta(hours=47)
 
-        data_today = await self.fetch_prices(today, tomorrow)
+        data = await self.fetch_prices(today, tomorrow)
+        data_today = data[:24].to_dict()
+        data_tomorrow = data[24:48].to_dict()
 
         return {
-            "marketPricesElectricity": data_today,
+            "data": data,
+            "dataToday": data_today,
+            "dataTomorrow": data_tomorrow
         }
 
     async def fetch_prices(self, start_date, end_date):
@@ -50,8 +54,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
                 self.api_update, start_date, end_date, self.api_key
             )
 
-            data = resp.to_dict()
-            return data
+            return resp
 
         except (asyncio.TimeoutError, KeyError) as error:
             raise UpdateFailed(f"Fetching energy price data failed: {error}") from error
@@ -66,20 +69,23 @@ class EntsoeCoordinator(DataUpdateCoordinator):
     def processed_data(self):
         return {
             "current_price": self.get_current_hourprice(
-                self.data["marketPricesElectricity"]
+                self.data["data"]
             ),
             "next_hour_price": self.get_next_hourprice(
-                self.data["marketPricesElectricity"]
+                self.data["data"]
             ),
-            "min_price": self.get_min_price(self.data["marketPricesElectricity"]),
-            "max_price": self.get_max_price(self.data["marketPricesElectricity"]),
-            "avg_price": self.get_avg_price(self.data["marketPricesElectricity"]),
-            "time_min": self.get_min_time(self.data["marketPricesElectricity"]),
-            "time_max": self.get_max_time(self.data["marketPricesElectricity"]),
-            "today_prices": self.get_hourprices(self.data["marketPricesElectricity"]),
-            "timestamped_prices": self.get_timestamped_prices(
-                self.data["marketPricesElectricity"]
+            "min_price": self.get_min_price(self.data["dataToday"]),
+            "max_price": self.get_max_price(self.data["dataToday"]),
+            "avg_price": self.get_avg_price(self.data["dataToday"]),
+            "time_min": self.get_min_time(self.data["dataToday"]),
+            "time_max": self.get_max_time(self.data["dataToday"]),
+            "prices_today": self.get_timestamped_prices(
+                self.data["dataToday"]
             ),
+            "prices_tomorrow": self.get_timestamped_prices(
+                self.data["dataTomorrow"]),
+            "prices": self.get_timestamped_prices(
+                self.data["data"])
         }
 
     def get_next_hourprice(self, hourprices) -> int:

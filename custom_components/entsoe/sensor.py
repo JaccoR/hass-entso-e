@@ -55,7 +55,8 @@ class EntsoeSensor(CoordinatorEntity, SensorEntity):
         except (TypeError, IndexError):
             # No data available
             self._attr_native_value = None
-        invalid_keys = {"time_min", "time_max",""}
+        # These return pd.timestamp objects and are therefore not able to get into attributes
+        invalid_keys = {"time_min", "time_max"}
         self._attr_extra_state_attributes = {x: self.coordinator.processed_data()[x] for x in self.coordinator.processed_data() if x not in invalid_keys}
 
         # Cancel the currently scheduled event if there is any

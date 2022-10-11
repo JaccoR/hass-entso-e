@@ -20,7 +20,10 @@ COMPONENT_TITLE = "ENTSO-e Transparency Platform"
 CONF_API_KEY = "api_key"
 CONF_AREA = "area"
 CONF_COORDINATOR = "coordinator"
+CONF_ADDITIONAL = "additional_cost"
+DEFAULT_TEMPLATE = "{{0.0|float}}"
 
+# Commented ones are not working at entsoe
 TARGET_AREA_OPTIONS = [
     # SelectOptionDict(value="AL", label="Albania"),
     SelectOptionDict(value="AT", label="Austria"),

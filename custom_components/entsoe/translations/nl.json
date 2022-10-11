@@ -2,31 +2,31 @@
   "config": {
     "step": {
       "user": {
-          "description": "Please add the ENTSO-e Transparency Platform API key and area",
+          "description": "Voeg je API key en het gebied toe",
           "data": {
-            "api_key": "Your API Key",
-            "area": "Area",
-            "additional_cost": "Additional Cost Template (Optional)"
+            "api_key": "Je API Key",
+            "area": "Gebied*",
+            "additional_cost": "Toegevoegde Kosten Template (Optioneel)"
           }
       }
     },
     "error": {
-      "invalid_template": "Invalid Template, Check https://github.com/JaccoR/hass-entso-e"
+      "invalid_template": "Template Ongeldig, Check https://github.com/JaccoR/hass-entso-e"
   }
   },
   "options": {
     "step": {
       "init": {
-        "description": "Please add the ENTSO-e Transparency Platform API key and area",
+        "description": "Voeg je API key en het gebied toe",
         "data": {
-          "api_key": "Your API Key",
-          "area": "Area",
-          "additional_cost": "Additional Cost Template (Optional)"
+          "api_key": "Je API Key",
+          "area": "Gebied*",
+          "additional_cost": "Toegevoegde Kosten Template (Optioneel)"
         }
       }
     },
     "error": {
-      "invalid_template": "Invalid Template, Check https://github.com/JaccoR/hass-entso-e"
+      "invalid_template": "Template Ongeldig, Check https://github.com/JaccoR/hass-entso-e"
   }
   }
 }

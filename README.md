@@ -34,7 +34,7 @@ The sensors can be added using the web UI. In the web UI you can add your API-ke
 ### Additional Cost Template
 
 In the optional field `Additional Cost Template` a template for additional costs, like hourly fixed costs, can be added. When left empty, no additional costs are added.
-In this template ```now()``` always refers start of the hour of that price. this way we can calculate the correct costs and add that to the day ahead prices. 
+In this template `now()` always refers start of the hour of that price. this way we can calculate the correct costs and add that to the day ahead prices. 
 
 An example template is given below:
 ```
@@ -59,7 +59,7 @@ An example template is given below:
     {%else%}
         {{s.winter_night+s.hourly_fixed_cost+s.cert|float}}
     {% endif %}
-{% endif %
+{% endif %}
 ```
 ------
 

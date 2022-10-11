@@ -29,19 +29,12 @@ Add https://github.com/JaccoR/hass-entso-e to your HACS custom repositories and 
 ------
 ## Configuration
 
-The sensors can be added using the web UI or in configuration.yaml. In the web UI you can add your API-key and country and the sensors will automatically be added to your system. In the optional field `Additional Cost Template` a template for additional costs like hourly fixed costs can be added. When left empty, no additional costs are added. More information [here](#additional-cost-template).
+The sensors can be added using the web UI. In the web UI you can add your API-key and country and the sensors will automatically be added to your system. There is an optional field for an additional cost template.
 
- An example configuration is given below:
-```
-sensor:
-  - platform: entsoe
-    api_key: <YOUR ENTSO-E API KEY>
-    area: "Kr.sand"
-    additional_cost: "{{0.0|float}}" # default value
-```
 ### Additional Cost Template
 
-This option allows the usage of a template to add a tariff.now() always refers start of the hour of that price. this way we can calculate the correct costs add that to graphs etc. 
+In the optional field `Additional Cost Template` a template for additional costs, like hourly fixed costs, can be added. When left empty, no additional costs are added.
+In this template ```now()``` always refers start of the hour of that price. this way we can calculate the correct costs and add that to the day ahead prices. 
 
 An example template is given below:
 ```

@@ -88,7 +88,6 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         today = pd.Timestamp.now(tz=str(time_zone)).replace(hour=0, minute=0, second=0)
 
         tomorrow = today + pd.Timedelta(hours=47)
-
         data = await self.fetch_prices(today, tomorrow)
 
         parsed_data = self.parse_hourprices(data)

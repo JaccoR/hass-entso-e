@@ -1,4 +1,4 @@
-# Home Assistant ENTSO-e Transparency Platform Energy Prices
+# Home Assistant ENTSO-e Transparency Platform Energy Prices [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/donate/?hosted_button_id=J6LK5FLATEUNC)
 Custom component for Home Assistant to fetch energy prices and information of all European countries from the ENTSO-e Transparency Platform (https://transparency.entsoe.eu/).
 Day ahead energy prices are added as a sensor and can be used in automations to switch equipment. 24 Hour forecast of the energy prices is in the sensors attributes.
 
@@ -20,7 +20,7 @@ The integration adds the following sensors:
 ## Installation
 
 ### Manual
-Download this repository and place the contents of `custom_components` in your own `custom_components` map of your Home Assistant installation. Restart Home Assistant and add the integration through your settings. Add your API-key and country and the sensors will automatically be added to your system.
+Download this repository and place the contents of `custom_components` in your own `custom_components` map of your Home Assistant installation. Restart Home Assistant and add the integration through your settings. 
 
 ### HACS
 
@@ -29,7 +29,7 @@ Add https://github.com/JaccoR/hass-entso-e to your HACS custom repositories and 
 ------
 ## Configuration
 
-The sensors can be added using the web UI or in configuration.yaml. In the web UI you can add your API-key and country and the sensors will automatically be added to your system. In the optional field `Additional Cost Template` a template for additional costs like hourly fixed costs can be added. More information [here](#additional-cost-template).
+The sensors can be added using the web UI or in configuration.yaml. In the web UI you can add your API-key and country and the sensors will automatically be added to your system. In the optional field `Additional Cost Template` a template for additional costs like hourly fixed costs can be added. When left empty, no additional costs are added. More information [here](#additional-cost-template).
 
  An example configuration is given below:
 ```
@@ -37,7 +37,7 @@ sensor:
   - platform: entsoe
     api_key: <YOUR ENTSO-E API KEY>
     area: "Kr.sand"
-    additional_cost: "{{0.0|float}}"   # default {{0.0|float}}
+    additional_cost: "{{0.0|float}}" # default value
 ```
 ### Additional Cost Template
 

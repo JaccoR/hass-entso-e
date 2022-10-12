@@ -15,7 +15,7 @@ The integration adds the following sensors:
 - Next Hour Day-Ahead Electricity Price
 - Time Of Highest Energy Price Today
 - Time Of Lowest Energy Price Today
-  
+
 ------
 ## Installation
 
@@ -68,3 +68,46 @@ An example template is given below:
 
 The integration is in an early state and receives a lot of updates. If you already setup this integration and encounter an error after updating, please try redoing the above installation steps. 
 
+------
+## Integration
+
+### Show prices graph with ApexCharts Card
+
+You can show a nice graph with the prices by using the [ApexCharts Card](https://github.com/RomRider/apexcharts-card)
+
+![Prices graph](images/PriceGraph.png)
+
+Add the ApexCharts Card from HACS.
+
+```yaml
+type: custom:apexcharts-card
+graph_span: 48h
+update_delay: 2s
+span:
+  start: day
+now:
+  show: true
+  label: Now
+header:
+  show: false
+  title: Day ahead prices
+  show_states: true
+  colorize_states: true
+series:
+  - entity: sensor.current_electricity_market_price
+    type: column
+    name: Today
+    float_precision: 4
+    data_generator: |
+      return entity.attributes.prices_today.map((data, index) => {
+        return [data.time, data.price];
+      });
+  - entity: sensor.current_electricity_market_price
+    name: Tomorrow
+    type: column
+    float_precision: 4
+    data_generator: |
+      return entity.attributes.prices_tomorrow.map((data, index) => {
+        return [new Date(data.time).getTime(), data.price];
+      });
+```

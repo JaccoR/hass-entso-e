@@ -33,9 +33,9 @@ Add https://github.com/JaccoR/hass-entso-e to your HACS custom repositories and 
 ------
 ## Configuration
 
-The sensors can be added using the web UI. In the web UI you can add your API-key and country and the sensors will automatically be added to your system. There is an optional field for an additional cost template.
+The sensors can be added using the web UI. In the web UI you can add your API-key and country and the sensors will automatically be added to your system. There is an optional field for an cost modifyer template.
 
-### Additional Cost Template
+### Cost Modifyer Template
 
 In the optional field `Price Modifyer Template` a template to modify the price to add additional costs, such as fixed costs per kWh and VAT, can be added. When left empty, no additional costs are added.
 In this template `now()` always refers start of the hour of that price and `current_price` refers to the price itself. This way day ahead price can be modified to correct for extra costs.

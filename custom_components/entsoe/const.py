@@ -20,10 +20,25 @@ COMPONENT_TITLE = "ENTSO-e Transparency Platform"
 CONF_API_KEY = "api_key"
 CONF_AREA = "area"
 CONF_COORDINATOR = "coordinator"
-CONF_ADDITIONAL = "additional_cost"
-DEFAULT_TEMPLATE = "{{0.0|float}}"
+CONF_MODIFYER = "modifyer"
+DEFAULT_TEMPLATE = "{{current_price}}"
 
 # Commented ones are not working at entsoe
+AREA_INFO = [{"code":"AT", "name":"Austria", "VAT":0.21, "Currency":"EUR"},
+             {"code":"AT", "name":"Austria", "VAT":0.21, "Currency":"EUR"},
+             {"code":"AT", "name":"Austria", "VAT":0.21, "Currency":"EUR"},
+             {"code":"AT", "name":"Austria", "VAT":0.21, "Currency":"EUR"},
+             {"code":"AT", "name":"Austria", "VAT":0.21, "Currency":"EUR"},
+             {"code":"AT", "name":"Austria", "VAT":0.21, "Currency":"EUR"},
+             {"code":"AT", "name":"Austria", "VAT":0.21, "Currency":"EUR"},
+             {"code":"AT", "name":"Austria", "VAT":0.21, "Currency":"EUR"},
+             {"code":"AT", "name":"Austria", "VAT":0.21, "Currency":"EUR"},
+             {"code":"AT", "name":"Austria", "VAT":0.21, "Currency":"EUR"},
+             {"code":"AT", "name":"Austria", "VAT":0.21, "Currency":"EUR"},
+             {"code":"AT", "name":"Austria", "VAT":0.21, "Currency":"EUR"},
+             {"code":"AT", "name":"Austria", "VAT":0.21, "Currency":"EUR"}
+             ]
+
 TARGET_AREA_OPTIONS = [
     # SelectOptionDict(value="AL", label="Albania"),
     SelectOptionDict(value="AT", label="Austria"),

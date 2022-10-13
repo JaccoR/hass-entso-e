@@ -15,7 +15,7 @@ from homeassistant.helpers.selector import SelectSelectorConfig, SelectSelector
 from homeassistant.helpers.template import Template
 
 from .const import (
-    CONF_ADDITIONAL,
+    CONF_MODIFYER,
     CONF_API_KEY,
     CONF_AREA,
     DOMAIN,
@@ -49,16 +49,16 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             template_ok = False
-            if user_input[CONF_ADDITIONAL] in (None, ""):
-                user_input[CONF_ADDITIONAL] = DEFAULT_TEMPLATE
+            if user_input[CONF_MODIFYER] in (None, ""):
+                user_input[CONF_MODIFYER] = DEFAULT_TEMPLATE
             else:
                 # Lets try to remove the most common mistakes, this will still fail if the template
                 # was writte in notepad or something like that..
-                user_input[CONF_ADDITIONAL] = re.sub(
-                    r"\s{2,}", "", user_input[CONF_ADDITIONAL]
+                user_input[CONF_MODIFYER] = re.sub(
+                    r"\s{2,}", "", user_input[CONF_MODIFYER]
                 )
 
-            template_ok = await self._valid_template(user_input[CONF_ADDITIONAL])
+            template_ok = await self._valid_template(user_input[CONF_MODIFYER])
 
             if template_ok:
                 return self.async_create_entry(
@@ -67,7 +67,7 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
                     options={
                         CONF_API_KEY: user_input[CONF_API_KEY],
                         CONF_AREA: user_input[CONF_AREA],
-                        CONF_ADDITIONAL: user_input[CONF_ADDITIONAL],
+                        CONF_MODIFYER: user_input[CONF_MODIFYER],
                     },
                 )
             else:
@@ -82,19 +82,24 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
                     vol.Required(CONF_AREA): SelectSelector(
                         SelectSelectorConfig(options=TARGET_AREA_OPTIONS),
                     ),
-                    vol.Optional(CONF_ADDITIONAL, default=""): vol.All(vol.Coerce(str)),
+                    vol.Optional(CONF_MODIFYER, default=""): vol.All(vol.Coerce(str)),
                 },
             ),
         )
 
     async def _valid_template(self, user_template):
         try:
-            ut = Template(user_template, self.hass).async_render()
+            #
+            ut = Template(user_template, self.hass).async_render(
+                current_price=0
+            )  # Add current price as 0 as we dont know it yet..
+
+            return True
             if isinstance(ut, float):
                 return True
             else:
                 return False
-        except:
+        except Exception as e:
             pass
         return False
 
@@ -114,16 +119,16 @@ class EntsoeOptionFlowHandler(OptionsFlow):
         errors = {}
         if user_input is not None:
             template_ok = False
-            if user_input[CONF_ADDITIONAL] in (None, ""):
-                user_input[CONF_ADDITIONAL] = DEFAULT_TEMPLATE
+            if user_input[CONF_MODIFYER] in (None, ""):
+                user_input[CONF_MODIFYER] = DEFAULT_TEMPLATE
             else:
                 # Lets try to remove the most common mistakes, this will still fail if the template
                 # was writte in notepad or something like that..
-                user_input[CONF_ADDITIONAL] = re.sub(
-                    r"\s{2,}", "", user_input[CONF_ADDITIONAL]
+                user_input[CONF_MODIFYER] = re.sub(
+                    r"\s{2,}", "", user_input[CONF_MODIFYER]
                 )
 
-            template_ok = await self._valid_template(user_input[CONF_ADDITIONAL])
+            template_ok = await self._valid_template(user_input[CONF_MODIFYER])
 
             if template_ok:
                 return self.async_create_entry(title="", data=user_input)
@@ -139,18 +144,23 @@ class EntsoeOptionFlowHandler(OptionsFlow):
                     vol.Required(CONF_AREA): SelectSelector(
                         SelectSelectorConfig(options=TARGET_AREA_OPTIONS),
                     ),
-                    vol.Optional(CONF_ADDITIONAL, default=""): vol.All(vol.Coerce(str)),
+                    vol.Optional(CONF_MODIFYER, default=""): vol.All(vol.Coerce(str)),
                 },
             ),
         )
 
     async def _valid_template(self, user_template):
         try:
-            ut = Template(user_template, self.hass).async_render()
+            #
+            ut = Template(user_template, self.hass).async_render(
+                current_price=0
+            )  # Add current price as 0 as we dont know it yet..
+
+            return True
             if isinstance(ut, float):
                 return True
             else:
                 return False
-        except:
+        except Exception as e:
             pass
         return False

@@ -6,7 +6,7 @@
           "data": {
             "api_key": "Je API Key",
             "area": "Gebied*",
-            "additional_cost": "Toegevoegde Kosten Template (Optioneel)"
+            "additional_cost": "Prijs Aanpassing Template (Optioneel)"
           }
       }
     },
@@ -21,7 +21,7 @@
         "data": {
           "api_key": "Je API Key",
           "area": "Gebied*",
-          "additional_cost": "Toegevoegde Kosten Template (Optioneel)"
+          "modifyer": "Prijs Aanpassing Template (Optioneel)"
         }
       }
     },

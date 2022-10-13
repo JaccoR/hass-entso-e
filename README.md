@@ -33,36 +33,35 @@ The sensors can be added using the web UI. In the web UI you can add your API-ke
 
 ### Additional Cost Template
 
-In the optional field `Additional Cost Template` a template for additional costs, like hourly fixed costs, can be added. When left empty, no additional costs are added.
-In this template `now()` always refers start of the hour of that price. this way we can calculate the correct costs and add that to the day ahead prices. 
+In the optional field `Price Modifyer Template` a template to modify the price to add additional costs, such as fixed costs per kWh and VAT, can be added. When left empty, no additional costs are added.
+In this template `now()` always refers start of the hour of that price and `current_price` refers to the price itself. This way day ahead price can be modified to correct for extra costs.
 
 An example template is given below:
 ```
 {% set s = {
-    "hourly_fixed_cost": 0.5352,
+    "extra_cost": 0.5352,
     "winter_night": 0.265,
     "winter_day": 0.465,
     "summer_day": 0.284,
     "summer_night": 0.246,
-    "cert": 0.01
+    "VAT": 1.21
 }
 %}
 {% if now().month >= 5 and now().month <11 %}
     {% if now().hour >=6 and now().hour <23 %}
-        {{s.summer_day+s.hourly_fixed_cost+s.cert|float}}
+        {{(current_price + s.summer_day+s.extra_cost) * s.VAT | float}}
     {% else %}
-        {{s.summer_night+s.hourly_fixed_cost+s.cert|float}}
+        {{(current_price + s.summer_night + s.extra_cost) * s.VAT | float}}
     {% endif %}
 {% else %}
     {% if now().hour >=6 and now().hour <23 %}
-        {{s.winter_day+s.hourly_fixed_cost+s.cert|float}}
+        {{(current_price + s.winter_day + s.extra_cost) * s.VAT | float}}
     {%else%}
-        {{s.winter_night+s.hourly_fixed_cost+s.cert|float}}
+        {{(current_price + s.winter_night + s.extra_cost) * s.VAT | float}}
     {% endif %}
 {% endif %}
 ```
 ------
-
 
 #### Updates
 

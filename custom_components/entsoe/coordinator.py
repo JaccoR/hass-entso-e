@@ -20,25 +20,25 @@ from .const import DEFAULT_TEMPLATE
 class EntsoeCoordinator(DataUpdateCoordinator):
     """Get the latest data and update the states."""
 
-    def __init__(self, hass: HomeAssistant, api_key, area, additional_cost) -> None:
+    def __init__(self, hass: HomeAssistant, api_key, area, modifyer) -> None:
         """Initialize the data object."""
         self.hass = hass
         self.api_key = api_key
         self.area = area
-        self.additional_cost = additional_cost
+        self.modifyer = modifyer
 
         # Check incase the sensor was setup using config flow.
         # This blow up if the template isnt valid.
-        if not isinstance(self.additional_cost, Template):
-            if self.additional_cost in (None, ""):
-                self.additional_cost = DEFAULT_TEMPLATE
-            self.additional_cost = cv.template(self.additional_cost)
+        if not isinstance(self.modifyer, Template):
+            if self.modifyer in (None, ""):
+                self.modifyer = DEFAULT_TEMPLATE
+            self.modifyer = cv.template(self.modifyer)
         # check for yaml setup.
         else:
-            if self.additional_cost.template in ("", None):
-                self.additional_cost = cv.template(DEFAULT_TEMPLATE)
+            if self.modifyer.template in ("", None):
+                self.modifyer = cv.template(DEFAULT_TEMPLATE)
 
-        attach(self.hass, self.additional_cost)
+        attach(self.hass, self.modifyer)
 
         logger = logging.getLogger(__name__)
         super().__init__(
@@ -58,6 +58,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
             return price
 
         else:
+            price = value / 1000
             if fake_dt is not None:
 
                 def faker():
@@ -66,11 +67,11 @@ class EntsoeCoordinator(DataUpdateCoordinator):
 
                     return pass_context(inner)
 
-                template_value = self.additional_cost.async_render(now=faker())
+                template_value = self.modifyer.async_render(now=faker(), current_price=price)
             else:
-                template_value = self.additional_cost.async_render()
+                template_value = self.modifyer.async_render()
 
-            price = round(template_value + value / 1000, 5)
+            price = round(template_value, 5)
 
             return price
 
@@ -88,6 +89,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         today = pd.Timestamp.now(tz=str(time_zone)).replace(hour=0, minute=0, second=0)
 
         tomorrow = today + pd.Timedelta(hours=47)
+
         data = await self.fetch_prices(today, tomorrow)
 
         parsed_data = self.parse_hourprices(data)

@@ -1,8 +1,12 @@
 # Home Assistant ENTSO-e Transparency Platform Energy Prices [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/donate/?hosted_button_id=J6LK5FLATEUNC)
 Custom component for Home Assistant to fetch energy prices of all European countries from the ENTSO-e Transparency Platform (https://transparency.entsoe.eu/).
-Day ahead energy prices are added as a sensor and can be used in automations to switch equipment. A 24 Hour forecast of the energy prices is in the sensors attributes.
+Day ahead energy prices are added as a sensor and can be used in automations to switch equipment. A 24 Hour forecast of the energy prices is in the sensors attributes and can be shown in a graph:
 
-#### API Access
+<p align="center">
+    <img src="https://user-images.githubusercontent.com/31140879/195382579-c87b3285-c599-4e30-867e-1acf9feffabe.png" width=40% height=40%>
+</p>
+
+### API Access
 You need an ENTSO-e Restful API key for this integration. To request this API key, register on the [Transparency Platform](https://transparency.entsoe.eu/) and send an email to transparency@entsoe.eu with “Restful API access” in the subject line.
 
 ### Sensors
@@ -61,6 +65,35 @@ An example template is given below:
     {% endif %}
 {% endif %}
 ```
+
+### ApexChart Graph
+Prices can be shown using the [ApexChart Graph Card](https://github.com/RomRider/apexcharts-card) like in the example above. The example Lovelace code for this graph is given below:
+
+```
+type: custom:apexcharts-card
+graph_span: 24h
+span:
+  start: day
+now:
+  show: true
+  label: Now
+header:
+  show: true
+  title: Electriciteitsprijzen Vandaag (€/kwh)
+series:
+  - entity: sensor.current_electricity_market_price
+    stroke_width: 2
+    float_precision: 3
+    type: column
+    opacity: 1
+    color: ''
+    data_generator: |
+      return entity.attributes.prices_today.map((record, index) => {
+        return [record.time, record.price];
+      });
+
+```
+
 ------
 
 #### Updates

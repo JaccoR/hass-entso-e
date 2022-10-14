@@ -40,7 +40,7 @@ The sensors can be added using the web UI. In the web UI you can add your API-ke
 In the optional field `Price Modifyer Template` a template to modify the price to add additional costs, such as fixed costs per kWh and VAT, can be added. When left empty, no additional costs are added.
 In this template `now()` always refers start of the hour of that price and `current_price` refers to the price itself. This way day ahead price can be modified to correct for extra costs.
 
-An example template is given below:
+An example template is given below. You can find and share other templates [here](https://github.com/JaccoR/hass-entso-e/discussions/categories/price-modifyer-templates).
 ```
 {% set s = {
     "extra_cost": 0.5352,
@@ -67,7 +67,7 @@ An example template is given below:
 ```
 
 ### ApexChart Graph
-Prices can be shown using the [ApexChart Graph Card](https://github.com/RomRider/apexcharts-card) like in the example above. The example Lovelace code for this graph is given below:
+Prices can be shown using the [ApexChart Graph Card](https://github.com/RomRider/apexcharts-card) like in the example above. The Lovelace code for this graph is given below:
 
 ```
 type: custom:apexcharts-card

@@ -61,15 +61,17 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
             template_ok = await self._valid_template(user_input[CONF_MODIFYER])
 
             if template_ok:
-                return self.async_create_entry(
-                    title=COMPONENT_TITLE,
-                    data={},
-                    options={
-                        CONF_API_KEY: user_input[CONF_API_KEY],
-                        CONF_AREA: user_input[CONF_AREA],
-                        CONF_MODIFYER: user_input[CONF_MODIFYER],
-                    },
-                )
+                if "current_price" in user_input[CONF_MODIFYER]:
+                    return self.async_create_entry(
+                        title=COMPONENT_TITLE,
+                        data={},
+                        options={
+                            CONF_API_KEY: user_input[CONF_API_KEY],
+                            CONF_AREA: user_input[CONF_AREA],
+                            CONF_MODIFYER: user_input[CONF_MODIFYER],
+                        },
+                    )
+                errors["base"] = "missing_current_price"
             else:
                 errors["base"] = "invalid_template"
 
@@ -131,7 +133,9 @@ class EntsoeOptionFlowHandler(OptionsFlow):
             template_ok = await self._valid_template(user_input[CONF_MODIFYER])
 
             if template_ok:
-                return self.async_create_entry(title="", data=user_input)
+                if "current_price" in user_input[CONF_MODIFYER]:
+                    return self.async_create_entry(title="", data=user_input)
+                errors["base"] = "missing_current_price"
             else:
                 errors["base"] = "invalid_template"
 
@@ -140,18 +144,17 @@ class EntsoeOptionFlowHandler(OptionsFlow):
             errors=errors,
             data_schema=vol.Schema(
                 {
-                    vol.Required(CONF_API_KEY): vol.All(vol.Coerce(str)),
-                    vol.Required(CONF_AREA): SelectSelector(
+                    vol.Required(CONF_API_KEY, default=self.config_entry.options[CONF_API_KEY]): vol.All(vol.Coerce(str)),
+                    vol.Required(CONF_AREA, default=self.config_entry.options[CONF_AREA]): SelectSelector(
                         SelectSelectorConfig(options=TARGET_AREA_OPTIONS),
                     ),
-                    vol.Optional(CONF_MODIFYER, default=""): vol.All(vol.Coerce(str)),
+                    vol.Optional(CONF_MODIFYER, default=self.config_entry.options[CONF_MODIFYER]): vol.All(vol.Coerce(str)),
                 },
             ),
         )
 
     async def _valid_template(self, user_template):
         try:
-            #
             ut = Template(user_template, self.hass).async_render(
                 current_price=0
             )  # Add current price as 0 as we dont know it yet..

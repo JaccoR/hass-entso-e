@@ -11,7 +11,9 @@
       }
     },
     "error": {
-      "invalid_template": "Template Ongeldig, Check https://github.com/JaccoR/hass-entso-e"
+      "invalid_template": "Template Ongeldig, Check https://github.com/JaccoR/hass-entso-e",
+      "missing_current_price": "'current_price' is niet in het template"
+
   }
   },
   "options": {
@@ -26,7 +28,9 @@
       }
     },
     "error": {
-      "invalid_template": "Template Ongeldig, Check https://github.com/JaccoR/hass-entso-e"
+      "invalid_template": "Template Ongeldig, Check https://github.com/JaccoR/hass-entso-e",
+      "missing_current_price": "'current_price' is niet in het template"
+
   }
   }
 }

@@ -75,7 +75,7 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
                 if template_ok:
                     if "current_price" in user_input[CONF_MODIFYER]:
                         return self.async_create_entry(
-                            title=name + " - " + COMPONENT_TITLE,
+                            title=name,
                             data={},
                             options={
                                 CONF_API_KEY: user_input[CONF_API_KEY],

@@ -6,13 +6,20 @@
           "data": {
             "api_key": "Your API Key",
             "area": "Area*",
-            "modifyer": "Price Modifyer Template (Optional)"
+            "advanced_options": "I want to add VAT and template (next step)"
           }
+      },
+      "extra": {
+        "data":{
+          "VAT_value": "VAT tariff",
+          "modifyer": "Price Modifyer Template (Optional)"
+
+        }
       }
     },
     "error": {
-      "invalid_template": "Invalid Template, Check https://github.com/JaccoR/hass-entso-e",
-      "missing_current_price": "'current_price' is missing from the template"
+      "invalid_template": "Invalid template, check https://github.com/JaccoR/hass-entso-e",
+      "missing_current_price": "'current_price' is missing from the template, check https://github.com/JaccoR/hass-entso-e"
   }
   },
   "options": {
@@ -22,13 +29,14 @@
         "data": {
           "api_key": "Your API Key",
           "area": "Area*",
-          "modifyer": "Price Modifyer Template (Optional)"
+          "modifyer": "Price Modifyer Template (Optional)",
+          "VAT_value": "VAT tariff"
         }
       }
     },
     "error": {
       "invalid_template": "Invalid Template, Check https://github.com/JaccoR/hass-entso-e",
-      "missing_current_price": "'current_price' is missing from the template"
+      "missing_current_price": "'current_price' is missing from the template, check https://github.com/JaccoR/hass-entso-e"
   }
   }
 }

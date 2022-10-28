@@ -6,7 +6,7 @@ import logging
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
-from .const import CONF_COORDINATOR, DOMAIN, CONF_API_KEY, CONF_AREA, CONF_MODIFYER
+from .const import CONF_COORDINATOR, CONF_VAT_VALUE, DOMAIN, CONF_API_KEY, CONF_AREA, CONF_MODIFYER, DEFAULT_MODIFYER
 from .coordinator import EntsoeCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -19,8 +19,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Initialise the coordinator and save it as domain-data
     api_key = entry.options[CONF_API_KEY]
     area = entry.options[CONF_AREA]
-    modifyer = entry.options[CONF_MODIFYER]
-    entsoe_coordinator = EntsoeCoordinator(hass, api_key=api_key, area = area, modifyer = modifyer)
+    modifyer = entry.options.get(CONF_MODIFYER, DEFAULT_MODIFYER)
+    vat = entry.options.get(CONF_VAT_VALUE, 0)
+    entsoe_coordinator = EntsoeCoordinator(hass, api_key=api_key, area = area, modifyer = modifyer, VAT=vat)
 
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = {

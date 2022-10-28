@@ -1,0 +1,85 @@
+alias: "Heater: office control best price"
+description: The automation tries to utilize the best prices for heating the office room
+trigger:
+  - platform: time_pattern
+    minutes: /5
+condition: []
+action:
+  - if:
+      - condition: template
+        value_template: >-
+          {% set n = now() %}
+
+          {% set ts =
+          as_local(as_datetime(states.sensor.entsoe_time_of_lowest_price_window_for_5_hours_use.state))
+          %}
+
+          {{ (n >= ts) and (n < (ts + timedelta(hours = 5))) }}
+      - condition: numeric_state
+        entity_id: sensor.climate_1_temperature
+        below: 22
+    then:
+      - service: switch.turn_on
+        data: {}
+        target:
+          entity_id: switch.office_heater_control
+    else:
+      - if:
+          - condition: template
+            value_template: >-
+              {# We need to find index in the attributes list for best 5 hours
+              window #}
+
+              {% set ns = namespace(best_index=-1) %}
+
+              {% for price in
+              states.sensor.entsoe_average_electricity_price_today.attributes.best_prices
+              %}
+                {% if ns.best_index == -1 and price["window"] == 5.0 %}
+                  {% set ns.best_index = loop.index0 %}
+                {% endif %}
+              {% endfor %}
+
+
+              {# If price difference between average of not best times and
+              current price lower than margin then it does not make sense to
+              pause heating #}
+
+              {% set margin = 0.05 %}
+
+              {% set average_other_time =
+              states.sensor.entsoe_average_electricity_price_today.attributes.best_prices[ns.best_index]["average_other_time"]
+              | float %}
+
+              {% set current_price =
+              states.sensor.entsoe_current_electricity_market_price.state |
+              float %}
+
+              {% set shutdown_for_worst_price = ((current_price -
+              average_other_time) > margin) | bool %}
+
+              {{ shutdown_for_bad_price }}
+          - condition: numeric_state
+            entity_id: sensor.climate_1_temperature
+            above: 19
+        then:
+          - service: switch.turn_off
+            data: {}
+            target:
+              entity_id: switch.office_heater_control
+        else:
+          - if:
+              - condition: numeric_state
+                entity_id: sensor.climate_1_temperature
+                above: 21
+            then:
+              - service: switch.turn_off
+                data: {}
+                target:
+                  entity_id: switch.office_heater_control
+            else:
+              - service: switch.turn_on
+                data: {}
+                target:
+                  entity_id: switch.office_heater_control
+mode: single

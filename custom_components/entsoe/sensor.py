@@ -79,7 +79,7 @@ class EntsoeSensor(CoordinatorEntity, SensorEntity):
             # No data available
             self._attr_native_value = None
         # These return pd.timestamp objects and are therefore not able to get into attributes
-        invalid_keys = {"time_min", "time_max"}
+        invalid_keys = {"time_min", "time_max", "best_start_time_for_2h", "best_start_time_for_3h", "best_start_time_for_4h", "best_start_time_for_5h"}
         existing_entities = [type.key for type in SENSOR_TYPES]
         if self.description.key == "avg_price":
             self._attr_extra_state_attributes = {x: self.coordinator.processed_data()[x] for x in self.coordinator.processed_data() if x not in invalid_keys and x not in existing_entities}

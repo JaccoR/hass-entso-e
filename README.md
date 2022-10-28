@@ -19,16 +19,16 @@ The integration adds the following sensors:
 - Next Hour Day-Ahead Electricity Price
 - Time Of Highest Energy Price Today
 - Time Of Lowest Energy Price Today
-  
+
 ------
 ## Installation
 
 ### Manual
-Download this repository and place the contents of `custom_components` in your own `custom_components` map of your Home Assistant installation. Restart Home Assistant and add the integration through your settings. 
+Download this repository and place the contents of `custom_components` in your own `custom_components` map of your Home Assistant installation. Restart Home Assistant and add the integration through your settings.
 
 ### HACS
 
-Search for "ENTSO-e" when adding HACS integrations and add "ENTSO-e Transparency Platform". Restart Home Assistant and add the integration through your settings. 
+Search for "ENTSO-e" when adding HACS integrations and add "ENTSO-e Transparency Platform". Restart Home Assistant and add the integration through your settings.
 
 ------
 ## Configuration
@@ -117,7 +117,64 @@ series:
 
 ------
 
-#### Updates
+### Getting prices for best priced windows
+Sometimes it makes sense to find not only time for lowest price but also for a lengthy window where price
+could be minimal. This might be useful for continuous loads like water heaters, dishwashers, car charging
+stations or even room heaters if there is an intention to heat up a room during low prices and pause the
+heating during high prices.
 
-The integration is in an early state and receives a lot of updates. If you already setup this integration and encounter an error after updating, please try redoing the above installation steps. 
+For that purpose the module contains 5 sensors named `time_of_lowest_price_window_for_X_hours_use`, where X can be 2, 3, 4 or 5.
+Also there is a set of attributes with more detailed information about times and prices: `best_prices`  with time span from 1 to 5 hours and 30 minutes step. Each attribute entry includes length
+of the window `window`, start time of the window `time`, total accumulated price `total`, average price
+during the period `average` and average price outside of the period `average_other_time`.
+
+The attributes can be used as templates in the automation:
+
+ - check that time is within wanted window:
+
+```
+{# When a name is configured it will be sensor.<name>_time_of_lowest_price_window_for_5_hours_use #}
+{% set ts = as_local(as_datetime(states.sensor.time_of_lowest_price_window_for_5_hours_use.state)) %}
+{% set n = now() %}
+{{ (n >= ts) and (n < (ts + timedelta(hours = 5))) }}
+```
+ - check the average price of the window:
+
+```
+{% set ns = namespace(index=-1) %}
+{# When a name is configured it will be sensor.<name>_average_electricity_price_today #}
+{% for price in states.sensor.average_electricity_price_today.attributes.best_prices %}
+  {% if ns.index == -1 and price["window"] == 5.0 %}
+    {% set ns.index = loop.index0 %}
+  {% endif %}
+{% endfor %}
+{{ states.sensor.average_electricity_price_today.attributes.best_prices[ns.index]["average"] | float }}
+```
+
+### Example of automations based on the best/worst values
+
+#### Water heater
+The automation can be found in the `examples` folder. The `automation_water_heater.yaml` contains code for the following scenario:
+ - automation restarts every 5 minutes
+ - the automation assumes that on average the heating takes about 2.5 hours every day
+ - also it is assumed that the heater has own relay that turn off heating after required temperature is reached
+ - the automation switches off the heater control switch after some extra time to make sure the water is warm enough (5 hours selected)
+
+#### Room heating
+The automation can be found in the `examples` folder. The `automation_room_heater.yaml` contains code for the following scenario:
+ - automation restarts every 5 minutes
+ - automation defines 5 hours best prices window. It is assumed that heating up the room takes about 5 hours
+ - when the heater is on, it should warm up the room to the 22 $^\circ$C during best prices
+ - bad prices are defined by the comparing of the current price to the average of prices outside of the best window. The margin
+   defines how high the current prices can be to become a "bad price"
+ - if it is time of "bad price" then the heater is switched off but minimum temperature of 19 $^\circ$C is still guaranteed
+ - otherwise average temperature of 21 $^\circ$C is kept outside of best hours
+
+
+------
+
+
+### Updates
+
+The integration is in an early state and receives a lot of updates. If you already setup this integration and encounter an error after updating, please try redoing the above installation steps.
 

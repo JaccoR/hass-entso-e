@@ -31,6 +31,8 @@ DEFAULT_MODIFYER = "{{current_price}}"
 #default is only for internal use / backwards compatibility
 CALCULATION_MODE = { "default": "publish", "rotation": "rotation", "sliding": "sliding", "publish": "publish" }
 
+DEFAULT_WINDOWS_LENGTHS = tuple(1 + 0.5 * i for i in range(11)) # Default from 1h to 6h with step 0.5
+
 # Commented ones are not working at entsoe
 AREA_INFO = {"AT":{"code":"AT", "name":"Austria", "VAT":0.21, "Currency":"EUR"},
              "BE":{"code":"BE", "name":"Belgium", "VAT":0.06, "Currency":"EUR"},
@@ -146,5 +148,29 @@ SENSOR_TYPES: tuple[EntsoeEntityDescription, ...] = (
         name="Time of lowest price today",
         device_class=SensorDeviceClass.TIMESTAMP,
         value_fn=lambda data: data["time_min"],
+    ),
+    EntsoeEntityDescription(
+        key="best_start_time_for_2h",
+        name="Time of lowest price window for 2 hours use",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        value_fn=lambda data: data["best_start_time_for_2h"],
+    ),
+    EntsoeEntityDescription(
+        key="best_start_time_for_3h",
+        name="Time of lowest price window for 3 hours use",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        value_fn=lambda data: data["best_start_time_for_3h"],
+    ),
+    EntsoeEntityDescription(
+        key="best_start_time_for_4h",
+        name="Time of lowest price window for 4 hours use",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        value_fn=lambda data: data["best_start_time_for_4h"],
+    ),
+    EntsoeEntityDescription(
+        key="best_start_time_for_5h",
+        name="Time of lowest price window for 5 hours use",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        value_fn=lambda data: data["best_start_time_for_5h"],
     ),
 )

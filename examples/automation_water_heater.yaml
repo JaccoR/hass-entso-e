@@ -1,0 +1,47 @@
+alias: "Heater: water heater at best time"
+description: The automation tries to utilize the best prices for heating the office room
+trigger:
+  - platform: time_pattern
+    minutes: /5
+condition: []
+action:
+  - if:
+      - condition: template
+        value_template: >-
+          {# We need to find index in the attributes list for best 2.5 hours
+          window #}
+
+          {% set ns = namespace(best_index=-1, worst_index = -1) %}
+
+          {% for price in
+          states.sensor.entsoe_average_electricity_price_today.attributes.best_prices
+          %}
+            {% if ns.best_index == -1 and price["window"] == 2.5 %}
+              {% set ns.best_index = loop.index0 %}
+            {% endif %}
+          {% endfor %}
+
+
+          {% set n = now() %}
+
+          {% set ts =
+          as_local(as_datetime(states.sensor.entsoe_average_electricity_price_today.attributes.best_prices[ns.best_index]["time"]))
+          %}
+
+          {{ (n >= ts) and (n < (ts + timedelta(hours = 5))) }}
+    then:
+      - if:
+          - condition: state
+            entity_id: switch.heater_1_water_heater
+            state: "off"
+        then:
+          - service: switch.turn_on
+            data: {}
+            target:
+              entity_id: switch.heater_1_water_heater
+    else:
+      - service: switch.turn_off
+        data: {}
+        target:
+          entity_id: switch.heater_1_water_heater
+mode: single

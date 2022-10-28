@@ -60,7 +60,7 @@ class EntsoeSensor(CoordinatorEntity, SensorEntity):
     def __init__(self, coordinator: EntsoeCoordinator, description: EntsoeEntityDescription, name: str = "") -> None:
         """Initialize the sensor."""
         if name not in (None, ""):
-            self.entity_id = generate_entity_id(ENTITY_ID_FORMAT, f"{description.name}_{name}", hass=coordinator.hass )
+            self.entity_id = generate_entity_id(ENTITY_ID_FORMAT, f"{name}_{description.name}", hass=coordinator.hass )
         else:
             self.entity_id = generate_entity_id(ENTITY_ID_FORMAT, f"{description.name}", hass=coordinator.hass )
 

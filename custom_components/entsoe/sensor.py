@@ -4,14 +4,15 @@ from __future__ import annotations
 from datetime import timedelta
 import logging
 
-from homeassistant.components.sensor import SensorEntity
+from homeassistant.components.sensor import SensorEntity, ENTITY_ID_FORMAT
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HassJob, HomeAssistant
 from homeassistant.helpers import event
+from homeassistant.helpers.entity import generate_entity_id
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import utcnow
-from .const import ATTRIBUTION, CONF_COORDINATOR, DOMAIN, EntsoeEntityDescription, ICON, SENSOR_TYPES
+from .const import ATTRIBUTION, CONF_COORDINATOR, CONF_ENTITY_PREFIX, DOMAIN, EntsoeEntityDescription, ICON, SENSOR_TYPES
 from .coordinator import EntsoeCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -25,11 +26,29 @@ async def async_setup_entry(
     """Set up ENTSO-e price sensor entries."""
     entsoe_coordinator = hass.data[DOMAIN][config_entry.entry_id][CONF_COORDINATOR]
 
+    entities = []
+    entity = {}
+    for description in SENSOR_TYPES:
+        if config_entry.options.get(CONF_ENTITY_PREFIX, "") not in (None, ""):
+            #Do not manipulate the original objects to allow for prefix renaming with the capability to deduce the original name
+            entity = EntsoeEntityDescription(
+                key=config_entry.entry_id+description.key,
+                name=description.name,
+                native_unit_of_measurement=description.native_unit_of_measurement,
+                value_fn=description.value_fn,
+            )
+        else:
+            entity = description
+
+        entities.append(
+            EntsoeSensor(
+                entsoe_coordinator, 
+                entity,
+                config_entry.options[CONF_ENTITY_PREFIX]
+                ))
+
     # Add an entity for each sensor type
-    async_add_entities([
-        EntsoeSensor(entsoe_coordinator, description)
-        for description in SENSOR_TYPES
-    ], True)
+    async_add_entities(entities, True)
 
 
 class EntsoeSensor(CoordinatorEntity, SensorEntity):
@@ -38,10 +57,13 @@ class EntsoeSensor(CoordinatorEntity, SensorEntity):
     _attr_attribution = ATTRIBUTION
     _attr_icon = ICON
 
-    def __init__(self, coordinator: EntsoeCoordinator, description: EntsoeEntityDescription) -> None:
+    def __init__(self, coordinator: EntsoeCoordinator, description: EntsoeEntityDescription, prefix: str = "") -> None:
         """Initialize the sensor."""
+
+        self.entity_id = generate_entity_id( ENTITY_ID_FORMAT, f"{prefix+description.name}", hass=coordinator.hass )
+
         self.entity_description: EntsoeEntityDescription = description
-        self._attr_unique_id = f"entsoe.{description.key}"
+        self._attr_unique_id = f"{self.entity_id}"
 
         self._update_job = HassJob(self.async_schedule_update_ha_state)
         self._unsub_update = None

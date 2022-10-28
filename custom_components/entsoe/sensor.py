@@ -4,7 +4,7 @@ from __future__ import annotations
 from datetime import timedelta
 import logging
 
-from homeassistant.components.sensor import SensorEntity, ENTITY_ID_FORMAT
+from homeassistant.components.sensor import SensorEntity, ENTITY_ID_FORMAT, DOMAIN
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HassJob, HomeAssistant
 from homeassistant.helpers import event
@@ -32,7 +32,7 @@ async def async_setup_entry(
         if config_entry.options.get(CONF_ENTITY_NAME, "") not in (None, ""):
             #Do not manipulate the original objects to allow for name renaming with the capability to deduce the original name
             entity = EntsoeEntityDescription(
-                key=config_entry.entry_id+description.key,
+                key=description.key,
                 name=description.name,
                 native_unit_of_measurement=description.native_unit_of_measurement,
                 value_fn=description.value_fn,
@@ -60,9 +60,9 @@ class EntsoeSensor(CoordinatorEntity, SensorEntity):
     def __init__(self, coordinator: EntsoeCoordinator, description: EntsoeEntityDescription, name: str = "") -> None:
         """Initialize the sensor."""
         if name not in (None, ""):
-            self.entity_id = generate_entity_id(ENTITY_ID_FORMAT, f"{name}_{description.name}", hass=coordinator.hass )
+            self.entity_id = f"{DOMAIN}.{name}_{description.key}"
         else:
-            self.entity_id = generate_entity_id(ENTITY_ID_FORMAT, f"{description.name}", hass=coordinator.hass )
+            self.entity_id = f"{DOMAIN}.{description.key}"
 
         self.entity_description: EntsoeEntityDescription = description
         self._attr_unique_id = f"{self.entity_id}"

@@ -14,29 +14,31 @@ import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.template import Template, attach
 from jinja2 import pass_context
 
-from .const import DEFAULT_TEMPLATE
+from .const import DEFAULT_MODIFYER, AREA_INFO
 
 
 class EntsoeCoordinator(DataUpdateCoordinator):
     """Get the latest data and update the states."""
 
-    def __init__(self, hass: HomeAssistant, api_key, area, modifyer) -> None:
+    def __init__(self, hass: HomeAssistant, api_key, area, modifyer, VAT = 0) -> None:
         """Initialize the data object."""
         self.hass = hass
         self.api_key = api_key
-        self.area = area
         self.modifyer = modifyer
+        self.area = AREA_INFO[area]["code"]
+        self.vat = VAT
+
 
         # Check incase the sensor was setup using config flow.
         # This blow up if the template isnt valid.
         if not isinstance(self.modifyer, Template):
             if self.modifyer in (None, ""):
-                self.modifyer = DEFAULT_TEMPLATE
+                self.modifyer = DEFAULT_MODIFYER
             self.modifyer = cv.template(self.modifyer)
         # check for yaml setup.
         else:
             if self.modifyer.template in ("", None):
-                self.modifyer = cv.template(DEFAULT_TEMPLATE)
+                self.modifyer = cv.template(DEFAULT_MODIFYER)
 
         attach(self.hass, self.modifyer)
 
@@ -50,30 +52,28 @@ class EntsoeCoordinator(DataUpdateCoordinator):
 
     def calc_price(self, value, fake_dt=None, no_template=False) -> float:
         """Calculate price based on the users settings."""
-
         # Used to inject the current hour.
         # so template can be simplified using now
         if no_template:
             price = round(value / 1000, 5)
             return price
 
+        price = value / 1000
+        if fake_dt is not None:
+
+            def faker():
+                def inner(*args, **kwargs):
+                    return fake_dt
+
+                return pass_context(inner)
+
+            template_value = self.modifyer.async_render(now=faker(), current_price=price)
         else:
-            price = value / 1000
-            if fake_dt is not None:
+            template_value = self.modifyer.async_render()
 
-                def faker():
-                    def inner(*args, **kwargs):
-                        return fake_dt
+        price = round(template_value * (1 + self.vat), 5)
 
-                    return pass_context(inner)
-
-                template_value = self.modifyer.async_render(now=faker(), current_price=price)
-            else:
-                template_value = self.modifyer.async_render()
-
-            price = round(template_value, 5)
-
-            return price
+        return price
 
     def parse_hourprices(self, hourprices):
         for hour, price in hourprices.items():
@@ -83,6 +83,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
     async def _async_update_data(self) -> dict:
         """Get the latest data from ENTSO-e"""
         self.logger.debug("Fetching ENTSO-e data")
+        self.logger.debug(self.area)
 
         time_zone = dt.now().tzinfo
         # We request data for today up until tomorrow.

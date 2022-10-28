@@ -42,6 +42,7 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
         self.advanced_options = None
         self.api_key = None
         self.modifyer = None
+        self.name = ""
 
     VERSION = 1
 
@@ -64,11 +65,11 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
             self.area = user_input[CONF_AREA]
             self.advanced_options = user_input[CONF_ADVANCED_OPTIONS]
             self.api_key = user_input[CONF_API_KEY]
-            name = ""
+            self.name = user_input[CONF_ENTITY_NAME]
 
             if user_input[CONF_ENTITY_NAME] not in (None, ""):
-                name = user_input[CONF_ENTITY_NAME]
-            NAMED_UNIQUE_ID = name + UNIQUE_ID
+                self.name = user_input[CONF_ENTITY_NAME]
+            NAMED_UNIQUE_ID = self.name + UNIQUE_ID
             try:
                 await self.async_set_unique_id(NAMED_UNIQUE_ID)
                 self._abort_if_unique_id_configured()
@@ -82,7 +83,7 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
             user_input[CONF_MODIFYER] = DEFAULT_MODIFYER
             if not already_configured:
                 return self.async_create_entry(
-                    title=COMPONENT_TITLE,
+                    title=self.name,
                     data={},
                     options={
                         CONF_API_KEY: user_input[CONF_API_KEY],
@@ -120,15 +121,17 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
         await self.async_set_unique_id(UNIQUE_ID)
         self._abort_if_unique_id_configured()
         errors = {}
+        already_configured = False
 
         if user_input is not None:
             user_input[CONF_AREA] = self.area
             user_input[CONF_API_KEY] = self.api_key
-            name = ""
+            user_input[CONF_ENTITY_NAME] = self.name
+
 
             if user_input[CONF_ENTITY_NAME] not in (None, ""):
-                name = user_input[CONF_ENTITY_NAME]
-            NAMED_UNIQUE_ID = name + UNIQUE_ID
+                self.name = user_input[CONF_ENTITY_NAME]
+            NAMED_UNIQUE_ID = self.name + UNIQUE_ID
             try:
                 await self.async_set_unique_id(NAMED_UNIQUE_ID)
                 self._abort_if_unique_id_configured()
@@ -152,7 +155,7 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
                 if template_ok:
                     if "current_price" in user_input[CONF_MODIFYER]:
                         return self.async_create_entry(
-                            title=COMPONENT_TITLE,
+                            title=self.name,
                             data={},
                             options={
                                 CONF_API_KEY: user_input[CONF_API_KEY],
@@ -160,7 +163,6 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
                                 CONF_MODIFYER: user_input[CONF_MODIFYER],
                                 CONF_VAT_VALUE: user_input[CONF_VAT_VALUE],
                                 CONF_ENTITY_NAME: user_input[CONF_ENTITY_NAME],
-                                CONF_ADVANCED_OPTIONS: user_input[CONF_ADVANCED_OPTIONS],
                             },
                         )
                     errors["base"] = "missing_current_price"
@@ -215,12 +217,13 @@ class EntsoeOptionFlowHandler(OptionsFlow):
         errors = {}
 
         if user_input is not None:
+            user_input[CONF_ENTITY_NAME] = self.config_entry.options[CONF_ENTITY_NAME]
             template_ok = False
             if user_input[CONF_MODIFYER] in (None, ""):
                 user_input[CONF_MODIFYER] = DEFAULT_MODIFYER
             else:
                 # Lets try to remove the most common mistakes, this will still fail if the template
-                # was writte in notepad or something like that..
+                # was written in notepad or something like that..
                 user_input[CONF_MODIFYER] = re.sub(
                     r"\s{2,}", "", user_input[CONF_MODIFYER]
                 )

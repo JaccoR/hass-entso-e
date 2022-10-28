@@ -12,7 +12,7 @@ from homeassistant.helpers.entity import generate_entity_id
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import utcnow
-from .const import ATTRIBUTION, CONF_COORDINATOR, CONF_ENTITY_PREFIX, DOMAIN, EntsoeEntityDescription, ICON, SENSOR_TYPES
+from .const import ATTRIBUTION, CONF_COORDINATOR, CONF_ENTITY_NAME, DOMAIN, EntsoeEntityDescription, ICON, SENSOR_TYPES
 from .coordinator import EntsoeCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -29,8 +29,8 @@ async def async_setup_entry(
     entities = []
     entity = {}
     for description in SENSOR_TYPES:
-        if config_entry.options.get(CONF_ENTITY_PREFIX, "") not in (None, ""):
-            #Do not manipulate the original objects to allow for prefix renaming with the capability to deduce the original name
+        if config_entry.options.get(CONF_ENTITY_NAME, "") not in (None, ""):
+            #Do not manipulate the original objects to allow for name renaming with the capability to deduce the original name
             entity = EntsoeEntityDescription(
                 key=config_entry.entry_id+description.key,
                 name=description.name,
@@ -42,9 +42,9 @@ async def async_setup_entry(
 
         entities.append(
             EntsoeSensor(
-                entsoe_coordinator, 
+                entsoe_coordinator,
                 entity,
-                config_entry.options[CONF_ENTITY_PREFIX]
+                config_entry.options[CONF_ENTITY_NAME]
                 ))
 
     # Add an entity for each sensor type
@@ -57,10 +57,10 @@ class EntsoeSensor(CoordinatorEntity, SensorEntity):
     _attr_attribution = ATTRIBUTION
     _attr_icon = ICON
 
-    def __init__(self, coordinator: EntsoeCoordinator, description: EntsoeEntityDescription, prefix: str = "") -> None:
+    def __init__(self, coordinator: EntsoeCoordinator, description: EntsoeEntityDescription, name: str = "") -> None:
         """Initialize the sensor."""
 
-        self.entity_id = generate_entity_id( ENTITY_ID_FORMAT, f"{prefix+description.name}", hass=coordinator.hass )
+        self.entity_id = generate_entity_id( ENTITY_ID_FORMAT, f"{description.name}_{name}", hass=coordinator.hass )
 
         self.entity_description: EntsoeEntityDescription = description
         self._attr_unique_id = f"{self.entity_id}"

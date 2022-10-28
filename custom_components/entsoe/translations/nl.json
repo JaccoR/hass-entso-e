@@ -2,35 +2,37 @@
   "config": {
     "step": {
       "user": {
-          "description": "Voeg je API key en het gebied toe",
+          "description": "Please add the ENTSO-e Transparency Platform API key and area",
           "data": {
-            "api_key": "Je API Key",
-            "area": "Gebied*",
-            "additional_cost": "Prijs Aanpassing Template (Optioneel)"
+            "api_key": "Your API Key",
+            "area": "Area*",
+            "modifyer": "Price Modifyer Template (Optional)",
+            "name": "Name (Optional)"
           }
       }
     },
     "error": {
-      "invalid_template": "Template Ongeldig, Check https://github.com/JaccoR/hass-entso-e",
-      "missing_current_price": "'current_price' is niet in het template"
-
+      "invalid_template": "Invalid Template, Check https://github.com/JaccoR/hass-entso-e",
+      "missing_current_price": "'current_price' is missing from the template",
+      "already_configured": "Integration instance with the same name already exists"
   }
   },
   "options": {
     "step": {
       "init": {
-        "description": "Voeg je API key en het gebied toe",
+        "description": "Please add the ENTSO-e Transparency Platform API key and area",
         "data": {
-          "api_key": "Je API Key",
-          "area": "Gebied*",
-          "modifyer": "Prijs Aanpassing Template (Optioneel)"
+          "api_key": "Your API Key",
+          "area": "Area*",
+          "modifyer": "Price Modifyer Template (Optional)",
+          "name": "Name (Optional)"
         }
       }
     },
     "error": {
-      "invalid_template": "Template Ongeldig, Check https://github.com/JaccoR/hass-entso-e",
-      "missing_current_price": "'current_price' is niet in het template"
-
+      "invalid_template": "Invalid Template, Check https://github.com/JaccoR/hass-entso-e",
+      "missing_current_price": "'current_price' is missing from the template",
+      "already_configured": "Integration instance with the same name already exists"
   }
   }
 }

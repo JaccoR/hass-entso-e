@@ -7,14 +7,14 @@
             "api_key": "Your API Key",
             "area": "Area*",
             "modifyer": "Price Modifyer Template (Optional)",
-            "prefix": "The prefix used by generated entities (Optional)"
+            "name": "Name (Optional)"
           }
       }
     },
     "error": {
       "invalid_template": "Invalid Template, Check https://github.com/JaccoR/hass-entso-e",
       "missing_current_price": "'current_price' is missing from the template",
-      "already_configured": "Integration instance with the same prefix already exists"
+      "already_configured": "Integration instance with the same name already exists"
   }
   },
   "options": {
@@ -25,14 +25,14 @@
           "api_key": "Your API Key",
           "area": "Area*",
           "modifyer": "Price Modifyer Template (Optional)",
-          "prefix": "The prefix used by generated entities (Optional)"
+          "name": "Name (Optional)"
         }
       }
     },
     "error": {
       "invalid_template": "Invalid Template, Check https://github.com/JaccoR/hass-entso-e",
       "missing_current_price": "'current_price' is missing from the template",
-      "already_configured": "Integration instance with the same prefix already exists"
+      "already_configured": "Integration instance with the same name already exists"
   }
   }
 }

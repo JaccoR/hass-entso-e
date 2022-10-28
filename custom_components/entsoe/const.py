@@ -18,6 +18,7 @@ UNIQUE_ID = f"{DOMAIN}_component"
 COMPONENT_TITLE = "ENTSO-e Transparency Platform"
 
 CONF_API_KEY = "api_key"
+CONF_ENTITY_NAME = "name"
 CONF_AREA = "area"
 CONF_COORDINATOR = "coordinator"
 CONF_MODIFYER = "modifyer"

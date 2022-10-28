@@ -21,6 +21,7 @@ from homeassistant.helpers.template import Template
 from .const import (
     CONF_MODIFYER,
     CONF_API_KEY,
+    CONF_ENTITY_NAME,
     CONF_AREA,
     CONF_ADVANCED_OPTIONS,
     CONF_VAT_VALUE,
@@ -56,36 +57,50 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Handle a flow initiated by the user."""
-        await self.async_set_unique_id(UNIQUE_ID)
-        self._abort_if_unique_id_configured()
         errors = {}
+        already_configured = False
 
         if user_input is not None:
             self.area = user_input[CONF_AREA]
             self.advanced_options = user_input[CONF_ADVANCED_OPTIONS]
             self.api_key = user_input[CONF_API_KEY]
+            name = ""
+
+            if user_input[CONF_ENTITY_NAME] not in (None, ""):
+                name = user_input[CONF_ENTITY_NAME]
+            NAMED_UNIQUE_ID = name + UNIQUE_ID
+            try:
+                await self.async_set_unique_id(NAMED_UNIQUE_ID)
+                self._abort_if_unique_id_configured()
+            except Exception as e:
+                errors["base"] = "already_configured"
+                already_configured = True
 
             if self.advanced_options:
                 return await self.async_step_extra()
             user_input[CONF_VAT_VALUE] = 0
             user_input[CONF_MODIFYER] = DEFAULT_MODIFYER
-            return self.async_create_entry(
-                title=COMPONENT_TITLE,
-                data={},
-                options={
-                    CONF_API_KEY: user_input[CONF_API_KEY],
-                    CONF_AREA: user_input[CONF_AREA],
-                    CONF_MODIFYER: user_input[CONF_MODIFYER],
-                    CONF_ADVANCED_OPTIONS: user_input[CONF_ADVANCED_OPTIONS],
-                    CONF_VAT_VALUE: user_input[CONF_VAT_VALUE],
-                },
-            )
+            if not already_configured:
+                return self.async_create_entry(
+                    title=COMPONENT_TITLE,
+                    data={},
+                    options={
+                        CONF_API_KEY: user_input[CONF_API_KEY],
+                        CONF_AREA: user_input[CONF_AREA],
+                        CONF_MODIFYER: user_input[CONF_MODIFYER],
+                        CONF_ADVANCED_OPTIONS: user_input[CONF_ADVANCED_OPTIONS],
+                        CONF_VAT_VALUE: user_input[CONF_VAT_VALUE],
+                        CONF_ENTITY_NAME: user_input[CONF_ENTITY_NAME]
+
+                    },
+                )
 
         return self.async_show_form(
             step_id="user",
             errors=errors,
             data_schema=vol.Schema(
                 {
+                    vol.Optional(CONF_ENTITY_NAME, default=""): vol.All(vol.Coerce(str)),
                     vol.Required(CONF_API_KEY): vol.All(vol.Coerce(str)),
                     vol.Required(CONF_AREA): SelectSelector(
                         SelectSelectorConfig(
@@ -109,6 +124,17 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             user_input[CONF_AREA] = self.area
             user_input[CONF_API_KEY] = self.api_key
+            name = ""
+
+            if user_input[CONF_ENTITY_NAME] not in (None, ""):
+                name = user_input[CONF_ENTITY_NAME]
+            NAMED_UNIQUE_ID = name + UNIQUE_ID
+            try:
+                await self.async_set_unique_id(NAMED_UNIQUE_ID)
+                self._abort_if_unique_id_configured()
+            except Exception as e:
+                errors["base"] = "already_configured"
+                already_configured = True
 
             template_ok = False
             if user_input[CONF_MODIFYER] in (None, ""):
@@ -122,21 +148,24 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
 
             template_ok = await self._valid_template(user_input[CONF_MODIFYER])
 
-            if template_ok:
-                if "current_price" in user_input[CONF_MODIFYER]:
-                    return self.async_create_entry(
-                        title=COMPONENT_TITLE,
-                        data={},
-                        options={
-                            CONF_API_KEY: user_input[CONF_API_KEY],
-                            CONF_AREA: user_input[CONF_AREA],
-                            CONF_MODIFYER: user_input[CONF_MODIFYER],
-                            CONF_VAT_VALUE: user_input[CONF_VAT_VALUE],
-                        },
-                    )
-                errors["base"] = "missing_current_price"
-            else:
-                errors["base"] = "invalid_template"
+            if not already_configured:
+                if template_ok:
+                    if "current_price" in user_input[CONF_MODIFYER]:
+                        return self.async_create_entry(
+                            title=COMPONENT_TITLE,
+                            data={},
+                            options={
+                                CONF_API_KEY: user_input[CONF_API_KEY],
+                                CONF_AREA: user_input[CONF_AREA],
+                                CONF_MODIFYER: user_input[CONF_MODIFYER],
+                                CONF_VAT_VALUE: user_input[CONF_VAT_VALUE],
+                                CONF_ENTITY_NAME: user_input[CONF_ENTITY_NAME],
+                                CONF_ADVANCED_OPTIONS: user_input[CONF_ADVANCED_OPTIONS],
+                            },
+                        )
+                    errors["base"] = "missing_current_price"
+                else:
+                    errors["base"] = "invalid_template"
 
 
         return self.async_show_form(
@@ -148,6 +177,7 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
                         CONF_VAT_VALUE, default=AREA_INFO[self.area]["VAT"]
                     ): vol.All(vol.Coerce(float, "must be a number")),
                     vol.Optional(CONF_MODIFYER, default=""): vol.All(vol.Coerce(str)),
+
                 },
             ),
         )
@@ -168,7 +198,6 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
             pass
         return False
 
-
 class EntsoeOptionFlowHandler(OptionsFlow):
     """Handle options."""
 
@@ -188,7 +217,7 @@ class EntsoeOptionFlowHandler(OptionsFlow):
         if user_input is not None:
             template_ok = False
             if user_input[CONF_MODIFYER] in (None, ""):
-                user_input[CONF_MODIFYER] = DEFAULT_TEMPLATE
+                user_input[CONF_MODIFYER] = DEFAULT_MODIFYER
             else:
                 # Lets try to remove the most common mistakes, this will still fail if the template
                 # was writte in notepad or something like that..
@@ -249,57 +278,3 @@ class EntsoeOptionFlowHandler(OptionsFlow):
         except Exception as e:
             pass
         return False
-
-    # async def async_step_init(
-    #     self, user_input: dict[str, Any] | None = None
-    # ) -> FlowResult:
-    #     """Manage the options."""
-    #     errors = {}
-    #     if user_input is not None:
-    #         template_ok = False
-    #         if user_input[CONF_MODIFYER] in (None, ""):
-    #             user_input[CONF_MODIFYER] = DEFAULT_TEMPLATE
-    #         else:
-    #             # Lets try to remove the most common mistakes, this will still fail if the template
-    #             # was writte in notepad or something like that..
-    #             user_input[CONF_MODIFYER] = re.sub(
-    #                 r"\s{2,}", "", user_input[CONF_MODIFYER]
-    #             )
-
-    #         template_ok = await self._valid_template(user_input[CONF_MODIFYER])
-
-    #         if template_ok:
-    #             if "current_price" in user_input[CONF_MODIFYER]:
-    #                 return self.async_create_entry(title="", data=user_input)
-    #             errors["base"] = "missing_current_price"
-    #         else:
-    #             errors["base"] = "invalid_template"
-
-    #     return self.async_show_form(
-    #         step_id="init",
-    #         errors=errors,
-    #         data_schema=vol.Schema(
-    #             {
-    #                 vol.Required(CONF_API_KEY, default=self.config_entry.options[CONF_API_KEY]): vol.All(vol.Coerce(str)),
-    #                 vol.Required(CONF_AREA, default=self.config_entry.options[CONF_AREA]): SelectSelector(
-    #                     SelectSelectorConfig(options=[SelectOptionDict(value=country, label=info["name"]) for country, info in AREA_INFO.items()]),
-    #                 ),
-    #                 vol.Optional(CONF_MODIFYER, default=self.config_entry.options[CONF_MODIFYER]): vol.All(vol.Coerce(str)),
-    #             },
-    #         ),
-    #     )
-
-    # async def _valid_template(self, user_template):
-    #     try:
-    #         ut = Template(user_template, self.hass).async_render(
-    #             current_price=0
-    #         )  # Add current price as 0 as we dont know it yet..
-
-    #         return True
-    #         if isinstance(ut, float):
-    #             return True
-    #         else:
-    #             return False
-    #     except Exception as e:
-    #         pass
-    #     return False

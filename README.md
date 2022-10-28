@@ -28,7 +28,7 @@ Download this repository and place the contents of `custom_components` in your o
 
 ### HACS
 
-Add https://github.com/JaccoR/hass-entso-e to your HACS custom repositories and install through HACS. Restart Home Assistant and add the integration through your settings. 
+Search for "ENTSO-e" when adding HACS integrations and add "ENTSO-e Transparency Platform". Restart Home Assistant and add the integration through your settings. 
 
 ------
 ## Configuration

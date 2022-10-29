@@ -88,7 +88,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         time_zone = dt.now().tzinfo
         # We request data for yesterday up until tomorrow.
         yesterday = pd.Timestamp.now(tz=str(time_zone)).replace(hour=0, minute=0, second=0) - pd.Timedelta(days = 1)
-        tomorrow = yesterday + pd.Timedelta(days = 3)
+        tomorrow = yesterday + pd.Timedelta(hours=71)
 
         data = await self.fetch_prices(yesterday, tomorrow)
 

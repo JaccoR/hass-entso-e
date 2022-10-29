@@ -81,7 +81,9 @@ header:
   show: true
   title: Electriciteitsprijzen Vandaag (€/kwh)
 series:
-  - entity: sensor.current_electricity_market_price
+  # This is the entity ID with no name configured.
+  # When a name is configured it will be sensor.<name>_average_electricity_price_today.
+  - entity: sensor.average_electricity_price_today
     stroke_width: 2
     float_precision: 3
     type: column
@@ -93,6 +95,7 @@ series:
       });
 
 ```
+
 
 ------
 

@@ -60,12 +60,16 @@ class EntsoeSensor(CoordinatorEntity, SensorEntity):
     def __init__(self, coordinator: EntsoeCoordinator, description: EntsoeEntityDescription, name: str = "") -> None:
         """Initialize the sensor."""
         if name not in (None, ""):
-            self.entity_id = f"{DOMAIN}.{name}_{description.key}"
+            #The Id used for addressing the entity in the ui, recorder history etc.
+            self.entity_id = f"{DOMAIN}.{name}_{description.name}"
+            #unique id in .storage file for ui configuration.
+            self._attr_unique_id = f"{DOMAIN}.{name}_{description.key}"
         else:
-            self.entity_id = f"{DOMAIN}.{description.key}"
+            self.entity_id = f"{DOMAIN}.{description.name}"
+            self._attr_unique_id = f"entsoe.{description.key}"
 
         self.entity_description: EntsoeEntityDescription = description
-        self._attr_unique_id = f"{self.entity_id}"
+
 
         self._update_job = HassJob(self.async_schedule_update_ha_state)
         self._unsub_update = None

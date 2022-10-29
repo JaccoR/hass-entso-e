@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from collections.abc import Callable
 
-from homeassistant.components.sensor import SensorEntityDescription, SensorDeviceClass
+from homeassistant.components.sensor import SensorEntityDescription, SensorDeviceClass, SensorStateClass
 from homeassistant.const import (
     CURRENCY_EURO,
     ENERGY_KILO_WATT_HOUR,
@@ -28,15 +28,15 @@ CONF_VAT_VALUE = "VAT_value"
 DEFAULT_MODIFYER = "{{current_price}}"
 
 # Commented ones are not working at entsoe
-AREA_INFO = {"AT":{"code":"AT", "name":"Austria", "VAT":0.22, "Currency":"EUR"},
-             "BE":{"code":"BE", "name":"Belgium", "VAT":0.21, "Currency":"EUR"},
+AREA_INFO = {"AT":{"code":"AT", "name":"Austria", "VAT":0.21, "Currency":"EUR"},
+             "BE":{"code":"BE", "name":"Belgium", "VAT":0.06, "Currency":"EUR"},
              "BG":{"code":"BG", "name":"Bulgaria", "VAT":0.21, "Currency":"EUR"},
              "HR":{"code":"HR", "name":"Croatia", "VAT":0.21, "Currency":"EUR"},
              "CZ":{"code":"CZ", "name":"Czech Republic", "VAT":0.21, "Currency":"EUR"},
              "DK_1":{"code":"DK_1", "name":"Denmark Eastern (DK1)", "VAT":0.21, "Currency":"EUR"},
              "DK_2":{"code":"DK_2", "name":"Denmark Western (DK2)", "VAT":0.21, "Currency":"EUR"},
              "EE":{"code":"EE", "name":"Estonia", "VAT":0.21, "Currency":"EUR"},
-             "FI":{"code":"FI", "name":"Finland", "VAT":0.21, "Currency":"EUR"},
+             "FI":{"code":"FI", "name":"Finland", "VAT":0.24, "Currency":"EUR"},
              "FR":{"code":"FR", "name":"France", "VAT":0.21, "Currency":"EUR"},
              "LU":{"code":"DE_LU", "name":"Luxembourg", "VAT":0.21, "Currency":"EUR"},
              "DE":{"code":"DE_LU", "name":"Germany", "VAT":0.21, "Currency":"EUR"},
@@ -51,11 +51,11 @@ AREA_INFO = {"AT":{"code":"AT", "name":"Austria", "VAT":0.22, "Currency":"EUR"},
              "LV":{"code":"LV", "name":"Latvia", "VAT":0.21, "Currency":"EUR"},
              "LT":{"code":"LT", "name":"Lithuania", "VAT":0.21, "Currency":"EUR"},
              "NL":{"code":"NL", "name":"Netherlands", "VAT":0.21, "Currency":"EUR"},
-             "NO_1":{"code":"NO_1", "name":"Norway Oslo (NO1)", "VAT":0.21, "Currency":"EUR"},
-             "NO_2":{"code":"NO_2", "name":"Norway Kr.Sand (NO2)", "VAT":0.21, "Currency":"EUR"},
-             "NO_3":{"code":"NO_3", "name":"Norway Tr.heim (NO3)", "VAT":0.21, "Currency":"EUR"},
-             "NO_4":{"code":"NO_4", "name":"Norway Tromsø (NO4)", "VAT":0.21, "Currency":"EUR"},
-             "NO_5":{"code":"NO_5", "name":"Norway Bergen (NO5)", "VAT":0.21, "Currency":"EUR"},
+             "NO_1":{"code":"NO_1", "name":"Norway Oslo (NO1)", "VAT":0.25, "Currency":"EUR"},
+             "NO_2":{"code":"NO_2", "name":"Norway Kr.Sand (NO2)", "VAT":0.25, "Currency":"EUR"},
+             "NO_3":{"code":"NO_3", "name":"Norway Tr.heim (NO3)", "VAT":0.25, "Currency":"EUR"},
+             "NO_4":{"code":"NO_4", "name":"Norway Tromsø (NO4)", "VAT":0, "Currency":"EUR"},
+             "NO_5":{"code":"NO_5", "name":"Norway Bergen (NO5)", "VAT":0.25, "Currency":"EUR"},
              "PL":{"code":"PL", "name":"Poland", "VAT":0.21, "Currency":"EUR"},
              "PT":{"code":"PT", "name":"Portugal", "VAT":0.21, "Currency":"EUR"},
              "RO":{"code":"RO", "name":"Romania", "VAT":0.21, "Currency":"EUR"},
@@ -63,10 +63,10 @@ AREA_INFO = {"AT":{"code":"AT", "name":"Austria", "VAT":0.22, "Currency":"EUR"},
              "SK":{"code":"SK", "name":"Slovakia", "VAT":0.21, "Currency":"EUR"},
              "SI":{"code":"SI", "name":"Slovenia", "VAT":0.21, "Currency":"EUR"},
              "ES":{"code":"ES", "name":"Spain", "VAT":0.21, "Currency":"EUR"},
-             "SE_1":{"code":"SE_1", "name":"Sweden Luleå (SE1)", "VAT":0.21, "Currency":"EUR"},
-             "SE_2":{"code":"SE_2", "name":"Sweden Sundsvall (SE2)", "VAT":0.21, "Currency":"EUR"},
-             "SE_3":{"code":"SE_3", "name":"Sweden Stockholm (SE3)", "VAT":0.21, "Currency":"EUR"},
-             "SE_4":{"code":"SE_4", "name":"Sweden Malmö (SE4)", "VAT":0.21, "Currency":"EUR"},
+             "SE_1":{"code":"SE_1", "name":"Sweden Luleå (SE1)", "VAT":0.25, "Currency":"EUR"},
+             "SE_2":{"code":"SE_2", "name":"Sweden Sundsvall (SE2)", "VAT":0.25, "Currency":"EUR"},
+             "SE_3":{"code":"SE_3", "name":"Sweden Stockholm (SE3)", "VAT":0.25, "Currency":"EUR"},
+             "SE_4":{"code":"SE_4", "name":"Sweden Malmö (SE4)", "VAT":0.25, "Currency":"EUR"},
              "CH":{"code":"CH", "name":"Switzerland", "VAT":0.21, "Currency":"EUR"},
             #  "UK":{"code":"UK", "name":"United Kingdom", "VAT":0.21, "Currency":"EUR"},
             #  "AL":{"code":"AL", "name":"Albania", "VAT":0.21, "Currency":"EUR"},
@@ -83,7 +83,6 @@ AREA_INFO = {"AT":{"code":"AT", "name":"Austria", "VAT":0.22, "Currency":"EUR"},
             #  "UA":{"code":"UA", "name":"Ukraine", "VAT":0.21, "Currency":"EUR"},
             }
 
-
 @dataclass
 class EntsoeEntityDescription(SensorEntityDescription):
     """Describes ENTSO-e sensor entity."""
@@ -97,7 +96,7 @@ SENSOR_TYPES: tuple[EntsoeEntityDescription, ...] = (
         name="Current electricity market price",
         native_unit_of_measurement=f"{CURRENCY_EURO}/{ENERGY_KILO_WATT_HOUR}",
         value_fn=lambda data: data["current_price"],
-        state_class="measurement"
+        state_class=SensorStateClass.MEASUREMENT
     ),
     EntsoeEntityDescription(
         key="next_hour_price",

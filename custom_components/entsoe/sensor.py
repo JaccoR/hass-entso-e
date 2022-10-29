@@ -4,11 +4,10 @@ from __future__ import annotations
 from datetime import timedelta
 import logging
 
-from homeassistant.components.sensor import SensorEntity, ENTITY_ID_FORMAT, DOMAIN
+from homeassistant.components.sensor import SensorEntity, DOMAIN, SensorStateClass, SensorDeviceClass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HassJob, HomeAssistant
 from homeassistant.helpers import event
-from homeassistant.helpers.entity import generate_entity_id
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import utcnow
@@ -46,9 +45,13 @@ class EntsoeSensor(CoordinatorEntity, SensorEntity):
 
     _attr_attribution = ATTRIBUTION
     _attr_icon = ICON
+    _attr_device_class = SensorDeviceClass.MONETARY
+    _attr_state_class = SensorStateClass.MEASUREMENT
 
     def __init__(self, coordinator: EntsoeCoordinator, description: EntsoeEntityDescription, name: str = "") -> None:
         """Initialize the sensor."""
+        self.description = description
+
         if name not in (None, ""):
             #The Id used for addressing the entity in the ui, recorder history etc.
             self.entity_id = f"{DOMAIN}.{name}_{description.name}"
@@ -75,7 +78,8 @@ class EntsoeSensor(CoordinatorEntity, SensorEntity):
             self._attr_native_value = None
         # These return pd.timestamp objects and are therefore not able to get into attributes
         invalid_keys = {"time_min", "time_max"}
-        self._attr_extra_state_attributes = {x: self.coordinator.processed_data()[x] for x in self.coordinator.processed_data() if x not in invalid_keys}
+        if self.description.key == "avg_price":
+            self._attr_extra_state_attributes = {x: self.coordinator.processed_data()[x] for x in self.coordinator.processed_data() if x not in invalid_keys}
 
         # Cancel the currently scheduled event if there is any
         if self._unsub_update:

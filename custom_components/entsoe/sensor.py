@@ -29,17 +29,7 @@ async def async_setup_entry(
     entities = []
     entity = {}
     for description in SENSOR_TYPES:
-        if config_entry.options.get(CONF_ENTITY_NAME, "") not in (None, ""):
-            #Do not manipulate the original objects to allow for name renaming with the capability to deduce the original name
-            entity = EntsoeEntityDescription(
-                key=description.key,
-                name=description.name,
-                native_unit_of_measurement=description.native_unit_of_measurement,
-                value_fn=description.value_fn,
-            )
-        else:
-            entity = description
-
+        entity = description
         entities.append(
             EntsoeSensor(
                 entsoe_coordinator,
@@ -60,12 +50,16 @@ class EntsoeSensor(CoordinatorEntity, SensorEntity):
     def __init__(self, coordinator: EntsoeCoordinator, description: EntsoeEntityDescription, name: str = "") -> None:
         """Initialize the sensor."""
         if name not in (None, ""):
-            self.entity_id = f"{DOMAIN}.{name}_{description.key}"
+            #The Id used for addressing the entity in the ui, recorder history etc.
+            self.entity_id = f"{DOMAIN}.{name}_{description.name}"
+            #unique id in .storage file for ui configuration.
+            self._attr_unique_id = f"entsoe.{name}_{description.key}"
         else:
-            self.entity_id = f"{DOMAIN}.{description.key}"
+            self.entity_id = f"{DOMAIN}.{description.name}"
+            self._attr_unique_id = f"entsoe.{description.key}"
 
         self.entity_description: EntsoeEntityDescription = description
-        self._attr_unique_id = f"{self.entity_id}"
+
 
         self._update_job = HassJob(self.async_schedule_update_ha_state)
         self._unsub_update = None

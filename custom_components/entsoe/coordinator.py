@@ -86,17 +86,16 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         self.logger.debug(self.area)
 
         time_zone = dt.now().tzinfo
-        # We request data for today up until tomorrow.
-        today = pd.Timestamp.now(tz=str(time_zone)).replace(hour=0, minute=0, second=0)
+        # We request data for yesterday up until tomorrow.
+        yesterday = pd.Timestamp.now(tz=str(time_zone)).replace(hour=0, minute=0, second=0) - pd.Timedelta(days = 1)
+        tomorrow = yesterday + pd.Timedelta(days = 3)
 
-        tomorrow = today + pd.Timedelta(hours=47)
-
-        data = await self.fetch_prices(today, tomorrow)
+        data = await self.fetch_prices(yesterday, tomorrow)
 
         parsed_data = self.parse_hourprices(data)
-        data_all = parsed_data.to_dict()
-        data_today = parsed_data[:24].to_dict()
-        data_tomorrow = parsed_data[24:48].to_dict()
+        data_all = parsed_data[-49:].to_dict()
+        data_today = parsed_data[-49:-25].to_dict()
+        data_tomorrow = parsed_data[-25:].to_dict()
 
         return {
             "data": data_all,

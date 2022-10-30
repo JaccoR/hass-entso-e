@@ -2,8 +2,13 @@ from __future__ import annotations
 
 import asyncio
 from datetime import timedelta
+from multiprocessing import AuthenticationError
+from aiohttp import ClientError
 import pandas as pd
 from entsoe import EntsoePandasClient
+from entsoe.exceptions import NoMatchingDataError
+from requests.exceptions import HTTPError
+
 import logging
 
 
@@ -112,15 +117,22 @@ class EntsoeCoordinator(DataUpdateCoordinator):
 
             return resp
 
-        except (asyncio.TimeoutError, KeyError) as error:
-            raise UpdateFailed(f"Fetching energy price data failed: {error}") from error
+        except NoMatchingDataError as exc:
+            raise UpdateFailed("ENTSO-e prices are unavailable at the moment.") from exc
+        except (HTTPError) as exc:
+            if exc.response.status_code == 401:
+                raise UpdateFailed("Unauthorized: Please check your API-key.") from exc
+        except Exception as exc:
+            raise UpdateFailed(f"Unexcpected error when fetching ENTSO-e prices: {exc}") from exc
+
+
 
     def api_update(self, start_date, end_date, api_key):
         client = EntsoePandasClient(api_key=api_key)
-
         return client.query_day_ahead_prices(
             country_code=self.area, start=start_date, end=end_date
         )
+
 
     def processed_data(self):
         return {

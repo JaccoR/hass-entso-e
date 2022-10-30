@@ -57,9 +57,11 @@ class EntsoeSensor(CoordinatorEntity, SensorEntity):
             self.entity_id = f"{DOMAIN}.{name}_{description.name}"
             #unique id in .storage file for ui configuration.
             self._attr_unique_id = f"entsoe.{name}_{description.key}"
+            self._attr_name = f"{description.name} ({name})"
         else:
             self.entity_id = f"{DOMAIN}.{description.name}"
             self._attr_unique_id = f"entsoe.{description.key}"
+            self._attr_name = f"{description.name}"
 
         self.entity_description: EntsoeEntityDescription = description
 

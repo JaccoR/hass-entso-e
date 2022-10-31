@@ -11,7 +11,7 @@
             "name": "Name (Optional)"
           }
       },
-      "extra": {
+      "advanced": {
         "data":{
           "VAT_value": "VAT tariff",
           "modifyer": "Price Modifyer Template (Optional)"

@@ -24,6 +24,7 @@ CONF_COORDINATOR = "coordinator"
 CONF_MODIFYER = "modifyer"
 CONF_ADVANCED_OPTIONS = "advanced_options"
 CONF_VAT_VALUE = "VAT_value"
+CONF_EXCHANGE_RATE_ID = "exchange_rate_id"
 
 DEFAULT_MODIFYER = "{{current_price}}"
 

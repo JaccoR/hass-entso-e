@@ -17,6 +17,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from homeassistant.util import dt
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.template import Template, attach
+from homeassistant.const import STATE_UNAVAILABLE, STATE_UNKNOWN
 from jinja2 import pass_context
 
 from .const import DEFAULT_MODIFYER, AREA_INFO
@@ -25,13 +26,15 @@ from .const import DEFAULT_MODIFYER, AREA_INFO
 class EntsoeCoordinator(DataUpdateCoordinator):
     """Get the latest data and update the states."""
 
-    def __init__(self, hass: HomeAssistant, api_key, area, modifyer, VAT = 0) -> None:
+    def __init__(self, hass: HomeAssistant, api_key, area, modifyer, VAT = 0, exchange_rate_id=0) -> None:
         """Initialize the data object."""
         self.hass = hass
         self.api_key = api_key
         self.modifyer = modifyer
         self.area = AREA_INFO[area]["code"]
         self.vat = VAT
+        self.exchange_rate_id = exchange_rate_id
+        self.exchange_value = None
 
 
         # Check incase the sensor was setup using config flow.
@@ -54,6 +57,24 @@ class EntsoeCoordinator(DataUpdateCoordinator):
             name="ENTSO-e coordinator",
             update_interval=timedelta(minutes=60),
         )
+        self.logger.debug("ENTSO-e exchange rate")
+        self.logger.debug(hass.states.get(self.exchange_rate_id))
+
+        def update_exchange():
+            """Handle sensor state changes."""
+            if (new_state := hass.states.get(self.exchange_rate_id)) is None:
+                self.exchange_value = 1
+
+            try:
+                self.exchange_value = (
+                    1
+                    if new_state.state in [STATE_UNKNOWN, STATE_UNAVAILABLE]
+                    else float(new_state.state)
+                )
+            except (ValueError, TypeError):
+                self.exchange_value = 1
+
+        update_exchange()
 
     def calc_price(self, value, fake_dt=None, no_template=False) -> float:
         """Calculate price based on the users settings."""
@@ -76,7 +97,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         else:
             template_value = self.modifyer.async_render()
 
-        price = round(template_value * (1 + self.vat), 5)
+        price = round(template_value * (1 + self.vat) * self.exchange_value, 5)
 
         return price
 

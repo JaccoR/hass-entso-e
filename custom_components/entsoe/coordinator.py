@@ -98,9 +98,13 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         data = await self.fetch_prices(yesterday, tomorrow)
 
         parsed_data = self.parse_hourprices(data)
-        data_all = parsed_data[-49:].to_dict()
-        data_today = parsed_data[-49:-25].to_dict()
-        data_tomorrow = parsed_data[-25:].to_dict()
+        data_all = parsed_data[-48:].to_dict()
+        if parsed_data.size > 48:
+            data_today = parsed_data[-48:-24].to_dict()
+            data_tomorrow = parsed_data[-24:].to_dict()
+        else:
+            data_today = parsed_data[-24:].to_dict()
+            data_tomorrow = {}
 
         return {
             "data": data_all,

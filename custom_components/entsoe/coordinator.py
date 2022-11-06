@@ -76,7 +76,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         else:
             template_value = self.modifyer.async_render()
 
-        price = round(float(template_value * (1 + self.vat)), 5)
+        price = round(float(template_value) * (1 + self.vat), 5)
 
         return price
 

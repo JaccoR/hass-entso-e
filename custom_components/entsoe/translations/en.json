@@ -6,7 +6,7 @@
           "data": {
             "api_key": "Your API Key",
             "area": "Area*",
-            "advanced_options": "I want to add VAT and template (next step)",
+            "advanced_options": "I want to set VAT, template and calculation method (next step)",
             "modifyer": "Price Modifyer Template (Optional)",
             "name": "Name (Optional)"
           }

@@ -25,11 +25,13 @@ from .const import (
     CONF_AREA,
     CONF_ADVANCED_OPTIONS,
     CONF_VAT_VALUE,
+    CONF_CALCULATION_MODE,
     DOMAIN,
     COMPONENT_TITLE,
     UNIQUE_ID,
     AREA_INFO,
     DEFAULT_MODIFYER,
+    CALCULATION_MODE
 )
 
 
@@ -179,7 +181,14 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
                         CONF_VAT_VALUE, default=AREA_INFO[self.area]["VAT"]
                     ): vol.All(vol.Coerce(float, "must be a number")),
                     vol.Optional(CONF_MODIFYER, default=""): vol.All(vol.Coerce(str)),
-
+                    vol.Optional(CONF_CALCULATION_MODE, default=CALCULATION_MODE["default"]): SelectSelector(
+                        SelectSelectorConfig(
+                            options=[
+                                SelectOptionDict(value=value, label=key)
+                                for key, value in CALCULATION_MODE.items() if key != "default"
+                            ]
+                        ),
+                    ),
                 },
             ),
         )
@@ -237,6 +246,8 @@ class EntsoeOptionFlowHandler(OptionsFlow):
             else:
                 errors["base"] = "invalid_template"
 
+        calculation_mode_default = self.config_entry.options[CONF_CALCULATION_MODE] if CONF_CALCULATION_MODE in self.config_entry.options else CALCULATION_MODE["default"]
+
         return self.async_show_form(
             step_id="init",
             errors=errors,
@@ -262,6 +273,14 @@ class EntsoeOptionFlowHandler(OptionsFlow):
                     vol.Optional(
                         CONF_MODIFYER, default=self.config_entry.options[CONF_MODIFYER]
                     ): vol.All(vol.Coerce(str)),
+                    vol.Optional(CONF_CALCULATION_MODE, default=calculation_mode_default ): SelectSelector(
+                        SelectSelectorConfig(
+                            options=[
+                                SelectOptionDict(value=value, label=key)
+                                for key, value in CALCULATION_MODE.items() if key != "default"
+                            ]
+                        ),
+                    ),
                 },
             ),
         )

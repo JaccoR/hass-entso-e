@@ -80,8 +80,10 @@ class EntsoeSensor(CoordinatorEntity, SensorEntity):
             self._attr_native_value = None
         # These return pd.timestamp objects and are therefore not able to get into attributes
         invalid_keys = {"time_min", "time_max"}
+        existing_entities = [type.key for type in SENSOR_TYPES]
         if self.description.key == "avg_price":
-            self._attr_extra_state_attributes = {x: self.coordinator.processed_data()[x] for x in self.coordinator.processed_data() if x not in invalid_keys}
+            self._attr_extra_state_attributes = {x: self.coordinator.processed_data()[x] for x in self.coordinator.processed_data() if x not in invalid_keys and x not in existing_entities}
+
 
         # Cancel the currently scheduled event if there is any
         if self._unsub_update:

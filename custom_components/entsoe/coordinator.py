@@ -158,14 +158,13 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         time_zone = dt.now().tzinfo
         hourprices = data["data"]
         if self.calculation_mode == CALCULATION_MODE["rotation"]:
-            now = pd.Timestamp.now(tz=str(time_zone)).replace(hour=0, minute=0, second=0)
-            #always return a dictionary 
-            return { hour: price for hour, price in hourprices.items() if pd.to_datetime(hour) > now and pd.to_datetime(hour) < now + timedelta(days=1) }
+            now = pd.Timestamp.now(tz=str(time_zone)).replace(hour=0, minute=0, second=0, microsecond=0)
+            return { hour: price for hour, price in hourprices.items() if pd.to_datetime(hour) >= now and pd.to_datetime(hour) < now + timedelta(days=1) }
         elif self.calculation_mode == CALCULATION_MODE["sliding"]:
-            now = pd.Timestamp.now(tz=str(time_zone)).replace(minute=0, second=0)
+            now = pd.Timestamp.now(tz=str(time_zone)).replace(minute=0, second=0, microsecond=0)
             return { hour: price for hour, price in hourprices.items() if pd.to_datetime(hour) >= now }
         elif self.calculation_mode == CALCULATION_MODE["publish"]:
-            return data["dataToday"]
+            return data["data"]
 
     def get_next_hourprice(self, hourprices) -> int:
         for hour, price in hourprices.items():

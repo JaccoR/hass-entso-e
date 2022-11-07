@@ -83,6 +83,7 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
                 return await self.async_step_extra()
             user_input[CONF_VAT_VALUE] = 0
             user_input[CONF_MODIFYER] = DEFAULT_MODIFYER
+            user_input[CONF_CALCULATION_MODE] = CALCULATION_MODE["default"]
             if not already_configured:
                 return self.async_create_entry(
                     title=self.name,
@@ -93,8 +94,8 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
                         CONF_MODIFYER: user_input[CONF_MODIFYER],
                         CONF_ADVANCED_OPTIONS: user_input[CONF_ADVANCED_OPTIONS],
                         CONF_VAT_VALUE: user_input[CONF_VAT_VALUE],
-                        CONF_ENTITY_NAME: user_input[CONF_ENTITY_NAME]
-
+                        CONF_ENTITY_NAME: user_input[CONF_ENTITY_NAME],
+                        CONF_CALCULATION_MODE: user_input[CONF_CALCULATION_MODE]
                     },
                 )
 
@@ -119,7 +120,7 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
         )
 
     async def async_step_extra(self, user_input=None):
-        """Handle VAT if VAT is asked."""
+        """Handle VAT, template and calculation mode if requested."""
         await self.async_set_unique_id(UNIQUE_ID)
         self._abort_if_unique_id_configured()
         errors = {}
@@ -165,6 +166,7 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
                                 CONF_MODIFYER: user_input[CONF_MODIFYER],
                                 CONF_VAT_VALUE: user_input[CONF_VAT_VALUE],
                                 CONF_ENTITY_NAME: user_input[CONF_ENTITY_NAME],
+                                CONF_CALCULATION_MODE: user_input[CONF_CALCULATION_MODE]
                             },
                         )
                     errors["base"] = "missing_current_price"
@@ -246,7 +248,7 @@ class EntsoeOptionFlowHandler(OptionsFlow):
             else:
                 errors["base"] = "invalid_template"
 
-        calculation_mode_default = self.config_entry.options[CONF_CALCULATION_MODE] if CONF_CALCULATION_MODE in self.config_entry.options else CALCULATION_MODE["default"]
+        calculation_mode_default = self.config_entry.options.get(CONF_CALCULATION_MODE, CALCULATION_MODE["default"])
 
         return self.async_show_form(
             step_id="init",

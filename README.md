@@ -65,6 +65,24 @@ An example template is given below. You can find and share other templates [here
     {% endif %}
 {% endif %}
 ```
+### Calculation method
+This changes the calculated (min,max,avg values) entities behaviour to one of:
+
+- Sliding
+The min/max/etc entities will get updated every hour with only upcoming data.
+This means that the min price returned at 13:00 will be the lowest price in the future (as available from that point in time).
+Regardless of past hours that might have had a lower price (this is most useful if you want to be able to schedule loads as soon and cheap as possible)
+
+- Default (on publish)
+The min/max/etc entities will get updated once new data becomes available.
+This means that the min price will update once the next days pricing becomes available (usually between 12:00 and 15:00)
+It also means that until the next days pricing becomes available the latest 48h of available data will be used to calculate a min price
+
+- Rotation
+The min/max/etc entities will get updated at midnight.
+This means that the min price returned at 23:59 will  be based on the day x price while at 00:00 the day x+1 price will be the only one used in the calculations)
+day x in this case is a random date like 2022-10-10 and day x+1 2022-10-11
+
 
 ### ApexChart Graph
 Prices can be shown using the [ApexChart Graph Card](https://github.com/RomRider/apexcharts-card) like in the example above. The Lovelace code for this graph is given below:

@@ -19,18 +19,19 @@ import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.template import Template, attach
 from jinja2 import pass_context
 
-from .const import DEFAULT_MODIFYER, AREA_INFO
+from .const import DEFAULT_MODIFYER, AREA_INFO, CALCULATION_MODE
 
 
 class EntsoeCoordinator(DataUpdateCoordinator):
     """Get the latest data and update the states."""
 
-    def __init__(self, hass: HomeAssistant, api_key, area, modifyer, VAT = 0) -> None:
+    def __init__(self, hass: HomeAssistant, api_key, area, modifyer, calculation_mode = CALCULATION_MODE["default"], VAT = 0) -> None:
         """Initialize the data object."""
         self.hass = hass
         self.api_key = api_key
         self.modifyer = modifyer
         self.area = AREA_INFO[area]["code"]
+        self.calculation_mode = calculation_mode
         self.vat = VAT
 
 
@@ -139,18 +140,31 @@ class EntsoeCoordinator(DataUpdateCoordinator):
 
 
     def processed_data(self):
+        filtered_hourprices = self._filter_calculated_hourprices(self.data)
         return {
             "current_price": self.get_current_hourprice(self.data["data"]),
             "next_hour_price": self.get_next_hourprice(self.data["data"]),
-            "min_price": self.get_min_price(self.data["dataToday"]),
-            "max_price": self.get_max_price(self.data["dataToday"]),
-            "avg_price": self.get_avg_price(self.data["dataToday"]),
-            "time_min": self.get_min_time(self.data["dataToday"]),
-            "time_max": self.get_max_time(self.data["dataToday"]),
+            "min_price": self.get_min_price(filtered_hourprices),
+            "max_price": self.get_max_price(filtered_hourprices),
+            "avg_price": self.get_avg_price(filtered_hourprices),
+            "time_min": self.get_min_time(filtered_hourprices),
+            "time_max": self.get_max_time(filtered_hourprices),
             "prices_today": self.get_timestamped_prices(self.data["dataToday"]),
             "prices_tomorrow": self.get_timestamped_prices(self.data["dataTomorrow"]),
             "prices": self.get_timestamped_prices(self.data["data"]),
         }
+
+    def _filter_calculated_hourprices(self, data) -> list:
+        time_zone = dt.now().tzinfo
+        hourprices = data["data"]
+        if self.calculation_mode == CALCULATION_MODE["rotation"]:
+            now = pd.Timestamp.now(tz=str(time_zone)).replace(hour=0, minute=0, second=0, microsecond=0)
+            return { hour: price for hour, price in hourprices.items() if pd.to_datetime(hour) >= now and pd.to_datetime(hour) < now + timedelta(days=1) }
+        elif self.calculation_mode == CALCULATION_MODE["sliding"]:
+            now = pd.Timestamp.now(tz=str(time_zone)).replace(minute=0, second=0, microsecond=0)
+            return { hour: price for hour, price in hourprices.items() if pd.to_datetime(hour) >= now }
+        elif self.calculation_mode == CALCULATION_MODE["publish"]:
+            return data["data"]
 
     def get_next_hourprice(self, hourprices) -> int:
         for hour, price in hourprices.items():

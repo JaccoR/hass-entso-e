@@ -108,8 +108,8 @@ series:
     opacity: 1
     color: ''
     data_generator: |
-      return entity.attributes.prices_today.map((record, index) => {
-        return [record.time, record.price];
+      return entity.attributes.prices.map((entry) => { 
+      return [new Date(entry.time), entry.price];
       });
 
 ```

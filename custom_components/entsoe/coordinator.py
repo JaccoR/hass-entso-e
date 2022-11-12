@@ -195,8 +195,5 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         return min(hourprices, key=hourprices.get)
 
     def get_timestamped_prices(self, hourprices):
-        list = []
-        for hour, price in hourprices.items():
-            str_hour = str(hour)
-            list.append({"time": str_hour, "price": price})
-        return list
+        return [{"time": hour.strftime('%Y/%m/%d %H:%M:%S'), "price": price} for hour, price in hourprices.items()]
+        

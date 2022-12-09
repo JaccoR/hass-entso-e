@@ -7,7 +7,8 @@ Day ahead energy prices are added as a sensor and can be used in automations to 
 </p>
 
 ### API Access
-You need an ENTSO-e Restful API key for this integration. To request this API key, register on the [Transparency Platform](https://transparency.entsoe.eu/) and send an email to transparency@entsoe.eu with “Restful API access” in the subject line.
+You need an ENTSO-e Restful API key for this integration. To request this API key, register on the [Transparency Platform](https://transparency.entsoe.eu/) and send an email to transparency@entsoe.eu with “Restful API access” in the subject line. Indicate the
+email address you entered during registration in the email body.
 
 ### Sensors
 The integration adds the following sensors:

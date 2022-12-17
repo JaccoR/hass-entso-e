@@ -3,8 +3,11 @@ from __future__ import annotations
 
 from datetime import timedelta
 import logging
+from typing import Any
 
-from homeassistant.components.sensor import SensorEntity, DOMAIN, SensorStateClass, SensorDeviceClass
+import pandas as pd
+
+from homeassistant.components.sensor import DOMAIN, SensorStateClass, SensorDeviceClass, RestoreSensor, SensorExtraStoredData
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HassJob, HomeAssistant
 from homeassistant.helpers import event
@@ -39,13 +42,41 @@ async def async_setup_entry(
     # Add an entity for each sensor type
     async_add_entities(entities, True)
 
+class EntsoeSensorExtraStoredData(SensorExtraStoredData):
+    """Object to hold extra stored data."""
+    _attr_extra_state_attributes: any
 
-class EntsoeSensor(CoordinatorEntity, SensorEntity):
+    def __init__(self, native_value, native_unit_of_measurement, _attr_extra_state_attributes) -> None:
+        super().__init__(native_value, native_unit_of_measurement)
+        self._attr_extra_state_attributes = _attr_extra_state_attributes  
+
+    def as_dict(self) -> dict[str, any]:
+        """Return a dict representation of the utility sensor data."""
+        data = super().as_dict()
+        data["_attr_extra_state_attributes"] = self._attr_extra_state_attributes if self._attr_extra_state_attributes is not None else None
+
+        return data
+
+    @classmethod
+    def from_dict(cls, restored: dict[str, Any]) -> EntsoeSensorExtraStoredData | None:
+        """Initialize a stored sensor state from a dict."""
+        extra = SensorExtraStoredData.from_dict(restored)
+        if extra is None:
+            return None
+
+        _attr_extra_state_attributes: any = restored["_attr_extra_state_attributes"] if "_attr_extra_state_attributes" in restored else None
+
+        return cls(
+            extra.native_value,
+            extra.native_unit_of_measurement,
+            _attr_extra_state_attributes
+        )  
+
+class EntsoeSensor(CoordinatorEntity, RestoreSensor):
     """Representation of a ENTSO-e sensor."""
 
     _attr_attribution = ATTRIBUTION
     _attr_icon = ICON
-    _attr_device_class = SensorDeviceClass.MONETARY
     _attr_state_class = SensorStateClass.MEASUREMENT
 
     def __init__(self, coordinator: EntsoeCoordinator, description: EntsoeEntityDescription, name: str = "") -> None:
@@ -63,21 +94,36 @@ class EntsoeSensor(CoordinatorEntity, SensorEntity):
             self._attr_unique_id = f"entsoe.{description.key}"
             self._attr_name = f"{description.name}"
 
+        self._attr_device_class = SensorDeviceClass.MONETARY if description.device_class is None else description.device_class
         self.entity_description: EntsoeEntityDescription = description
-
 
         self._update_job = HassJob(self.async_schedule_update_ha_state)
         self._unsub_update = None
 
         super().__init__(coordinator)
 
+    async def async_added_to_hass(self):
+        """Handle entity which will be added."""
+        await super().async_added_to_hass()
+        if (last_sensor_data := await self.async_get_last_sensor_data()) is not None:
+            # new introduced in 2022.04
+            self._attr_native_value = last_sensor_data.native_value
+            if last_sensor_data._attr_extra_state_attributes is not None:
+                self._attr_extra_state_attributes = dict(last_sensor_data._attr_extra_state_attributes)
+
     async def async_update(self) -> None:
         """Get the latest data and updates the states."""
         try:
-            self._attr_native_value = self.entity_description.value_fn(self.coordinator.processed_data())
+            value = self.entity_description.value_fn(self.coordinator.processed_data())
+            #Check if value if a panda timestamp and if so convert to an HA compatible format
+            if isinstance(value, pd._libs.tslibs.timestamps.Timestamp):
+                value = value.to_pydatetime()
+
+            self._attr_native_value = value
         except (TypeError, IndexError):
             # No data available
             self._attr_native_value = None
+
         # These return pd.timestamp objects and are therefore not able to get into attributes
         invalid_keys = {"time_min", "time_max"}
         existing_entities = [type.key for type in SENSOR_TYPES]
@@ -96,3 +142,18 @@ class EntsoeSensor(CoordinatorEntity, SensorEntity):
             self._update_job,
             utcnow().replace(minute=0, second=0) + timedelta(hours=1),
         )
+
+    @property
+    def extra_restore_state_data(self) -> EntsoeSensorExtraStoredData:
+        """Return sensor specific state data to be restored."""
+        return EntsoeSensorExtraStoredData(self._attr_native_value, None, self._attr_extra_state_attributes if hasattr(self, "_attr_extra_state_attributes") else None)
+
+
+    async def async_get_last_sensor_data(self):
+        """Restore Entsoe-e Sensor Extra Stored Data."""
+        if (restored_last_extra_data := await self.async_get_last_extra_data()) is None:
+            return None
+
+        return EntsoeSensorExtraStoredData.from_dict(
+           restored_last_extra_data.as_dict()
+       )

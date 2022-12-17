@@ -11,6 +11,7 @@ from requests.exceptions import HTTPError
 
 import logging
 
+from datetime import datetime
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -97,21 +98,30 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         tomorrow = yesterday + pd.Timedelta(hours = 71)
 
         data = await self.fetch_prices(yesterday, tomorrow)
+        self.logger.debug(data)
+        if data is not None:
+            parsed_data = self.parse_hourprices(data)
+            data_all = parsed_data[-48:].to_dict()
+            if parsed_data.size > 48:
+                data_today = parsed_data[-48:-24].to_dict()
+                data_tomorrow = parsed_data[-24:].to_dict()
+            else:
+                data_today = parsed_data[-24:].to_dict()
+                data_tomorrow = {}
 
-        parsed_data = self.parse_hourprices(data)
-        data_all = parsed_data[-48:].to_dict()
-        if parsed_data.size > 48:
-            data_today = parsed_data[-48:-24].to_dict()
-            data_tomorrow = parsed_data[-24:].to_dict()
-        else:
-            data_today = parsed_data[-24:].to_dict()
-            data_tomorrow = {}
-
-        return {
-            "data": data_all,
-            "dataToday": data_today,
-            "dataTomorrow": data_tomorrow,
-        }
+            return {
+                "data": data_all,
+                "dataToday": data_today,
+                "dataTomorrow": data_tomorrow,
+            }
+        elif self.data is not None:
+            self.logger.debug(self.data)
+            self.logger.debug("returning self data")
+            return {
+                "data": self.data["data"],
+                "dataToday": self.data["dataToday"],
+                "dataTomorrow": self.data["dataTomorrow"],
+            }
 
     async def fetch_prices(self, start_date, end_date):
         try:
@@ -122,13 +132,21 @@ class EntsoeCoordinator(DataUpdateCoordinator):
 
             return resp
 
-        except NoMatchingDataError as exc:
-            raise UpdateFailed("ENTSO-e prices are unavailable at the moment.") from exc
         except (HTTPError) as exc:
             if exc.response.status_code == 401:
                 raise UpdateFailed("Unauthorized: Please check your API-key.") from exc
         except Exception as exc:
-            raise UpdateFailed(f"Unexcpected error when fetching ENTSO-e prices: {exc}") from exc
+            if self.data is not None:
+                self.logger.debug("testing")
+                newest_timestamp = list(self.data["data"])[-1]
+                if(newest_timestamp) > pd.Timestamp.now(newest_timestamp.tzinfo):
+                    self.logger.warning(f"Warning the integration is running in degraded mode (falling back on stored data) since fetching the latest ENTSOE-e prices failed with exception: {exc}.")
+                else:
+                    self.logger.error(f"Error the latest available data is older than the current time. Therefore entities will no longer update. {exc}")
+            else:
+                self.logger.warning(f"Warning the integration doesn't have any up to date local data this means that entities won't get updated but access remains to restorable entities: {exc}.")
+
+#            raise UpdateFailed(f"Unexcpected error when fetching ENTSO-e prices: {exc}") from exc
 
 
 

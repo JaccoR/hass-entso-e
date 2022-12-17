@@ -127,7 +127,7 @@ class EntsoeSensor(CoordinatorEntity, RestoreSensor):
         # These return pd.timestamp objects and are therefore not able to get into attributes
         invalid_keys = {"time_min", "time_max"}
         existing_entities = [type.key for type in SENSOR_TYPES]
-        if self.description.key == "avg_price":
+        if self.description.key == "avg_price" and self._attr_native_value is not None:
             self._attr_extra_state_attributes = {x: self.coordinator.processed_data()[x] for x in self.coordinator.processed_data() if x not in invalid_keys and x not in existing_entities}
 
 

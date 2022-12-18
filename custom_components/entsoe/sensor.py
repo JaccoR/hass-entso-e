@@ -171,7 +171,7 @@ class EntsoeSensor(CoordinatorEntity, RestoreSensor):
             data_today = {  pd.Timestamp(item["time"]) : item["price"] for item in attributes.get("prices")[-48:-24] }
             data_tomorrow = {  pd.Timestamp(item["time"]) : item["price"] for item in attributes.get("prices")[-24:] }
         else:
-            data_today = {  pd.Timestamp(item["time"]) : item["price"] for item in attributes.get("prices")[-24:]} #new_state.attributes.get("prices")[-24:].to_dict()
+            data_today = {  pd.Timestamp(item["time"]) : item["price"] for item in attributes.get("prices")[-24:]}
             data_tomorrow = {}
         return {
             "data": data_all,

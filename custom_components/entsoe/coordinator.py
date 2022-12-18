@@ -113,10 +113,18 @@ class EntsoeCoordinator(DataUpdateCoordinator):
                 "dataToday": data_today,
                 "dataTomorrow": data_tomorrow,
             }
-            #TODO test if this is even necessary
         elif self.data is not None:
-            self.logger.debug(self.data)
-            self.logger.debug("returning self data")
+            newest_timestamp_today = pd.Timestamp(list(self.data["dataToday"])[-1])
+            if any(self.data["dataTomorrow"]) and newest_timestamp_today < pd.Timestamp.now(newest_timestamp_today.tzinfo):
+                self.data["dataToday"] = self.data["dataTomorrow"]
+                self.data["dataTomorrow"] = {}
+                data_list = list(self.data["data"])
+                new_data_dict = {}
+                if len(data_list) >= 24:
+                    for hour, price in self.data["data"].items()[-24:]:
+                        new_data_dict[hour] = price
+                    self.data["data"] = new_data_dict
+
             return {
                 "data": self.data["data"],
                 "dataToday": self.data["dataToday"],
@@ -137,8 +145,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
                 raise UpdateFailed("Unauthorized: Please check your API-key.") from exc
         except Exception as exc:
             if self.data is not None:
-                self.logger.debug("testing")
-                newest_timestamp = list(self.data["data"])[-1]
+                newest_timestamp = pd.Timestamp(list(self.data["data"])[-1])
                 if(newest_timestamp) > pd.Timestamp.now(newest_timestamp.tzinfo):
                     self.logger.warning(f"Warning the integration is running in degraded mode (falling back on stored data) since fetching the latest ENTSOE-e prices failed with exception: {exc}.")
                 else:

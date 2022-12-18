@@ -122,9 +122,9 @@ class EntsoeSensor(CoordinatorEntity, RestoreSensor):
                 value = value.to_pydatetime()
 
             self._attr_native_value = value
-        except (TypeError, IndexError):
+        except Exception as exc:
             # No data available
-            _LOGGER.warning(f"Unable to update entity due to data processing error: {value}")
+            _LOGGER.warning(f"Unable to update entity due to data processing error: {value} and error: {exc}")
 
         # These return pd.timestamp objects and are therefore not able to get into attributes
         invalid_keys = {"time_min", "time_max"}

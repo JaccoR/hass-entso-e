@@ -115,16 +115,17 @@ class EntsoeSensor(CoordinatorEntity, RestoreSensor):
     async def async_update(self) -> None:
         """Get the latest data and updates the states."""
         value: Any = None
-        try:
-            value = self.entity_description.value_fn(self.coordinator.processed_data())
-            #Check if value if a panda timestamp and if so convert to an HA compatible format
-            if isinstance(value, pd._libs.tslibs.timestamps.Timestamp):
-                value = value.to_pydatetime()
+        if self.coordinator.data is not None:
+            try:
+                value = self.entity_description.value_fn(self.coordinator.processed_data())
+                #Check if value if a panda timestamp and if so convert to an HA compatible format
+                if isinstance(value, pd._libs.tslibs.timestamps.Timestamp):
+                    value = value.to_pydatetime()
 
-            self._attr_native_value = value
-        except Exception as exc:
-            # No data available
-            _LOGGER.warning(f"Unable to update entity due to data processing error: {value} and error: {exc}")
+                self._attr_native_value = value
+            except Exception as exc:
+                # No data available
+                _LOGGER.warning(f"Unable to update entity due to data processing error: {value} and error: {exc}")
 
         # These return pd.timestamp objects and are therefore not able to get into attributes
         invalid_keys = {"time_min", "time_max"}
@@ -165,12 +166,12 @@ class EntsoeSensor(CoordinatorEntity, RestoreSensor):
        )
 
     def parse_attribute_data_to_coordinator_data(self, attributes):
-        data_all = { item["time"] : item["price"] for item in attributes.get("prices")[-48:] }
+        data_all = {  pd.Timestamp(item["time"]) : item["price"] for item in attributes.get("prices")[-48:] }
         if len(attributes.get("prices")) > 48:
-            data_today = { item["time"] : item["price"] for item in attributes.get("prices")[-48:-24] }
-            data_tomorrow = { item["time"] : item["price"] for item in attributes.get("prices")[-24:] }
+            data_today = {  pd.Timestamp(item["time"]) : item["price"] for item in attributes.get("prices")[-48:-24] }
+            data_tomorrow = {  pd.Timestamp(item["time"]) : item["price"] for item in attributes.get("prices")[-24:] }
         else:
-            data_today = { item["time"] : item["price"] for item in attributes.get("prices")[-24:]} #new_state.attributes.get("prices")[-24:].to_dict()
+            data_today = {  pd.Timestamp(item["time"]) : item["price"] for item in attributes.get("prices")[-24:]} #new_state.attributes.get("prices")[-24:].to_dict()
             data_tomorrow = {}
         return {
             "data": data_all,

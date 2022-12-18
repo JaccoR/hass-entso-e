@@ -150,10 +150,9 @@ class EntsoeCoordinator(DataUpdateCoordinator):
                     self.logger.warning(f"Warning the integration is running in degraded mode (falling back on stored data) since fetching the latest ENTSOE-e prices failed with exception: {exc}.")
                 else:
                     self.logger.error(f"Error the latest available data is older than the current time. Therefore entities will no longer update. {exc}")
+                    raise UpdateFailed(f"Unexcpected error when fetching ENTSO-e prices: {exc}") from exc
             else:
                 self.logger.warning(f"Warning the integration doesn't have any up to date local data this means that entities won't get updated but access remains to restorable entities: {exc}.")
-
-#            raise UpdateFailed(f"Unexcpected error when fetching ENTSO-e prices: {exc}") from exc
 
 
 

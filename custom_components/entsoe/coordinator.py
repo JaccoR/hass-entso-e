@@ -54,7 +54,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
             hass,
             logger,
             name="ENTSO-e coordinator",
-            update_interval=timedelta(minutes=60),
+            update_interval=timedelta(seconds=60),
         )
 
     def calc_price(self, value, fake_dt=None, no_template=False) -> float:
@@ -98,7 +98,6 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         tomorrow = yesterday + pd.Timedelta(hours = 71)
 
         data = await self.fetch_prices(yesterday, tomorrow)
-        self.logger.debug(data)
         if data is not None:
             parsed_data = self.parse_hourprices(data)
             data_all = parsed_data[-48:].to_dict()
@@ -114,6 +113,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
                 "dataToday": data_today,
                 "dataTomorrow": data_tomorrow,
             }
+            #TODO test if this is even necessary
         elif self.data is not None:
             self.logger.debug(self.data)
             self.logger.debug("returning self data")

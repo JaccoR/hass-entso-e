@@ -107,12 +107,14 @@ class EntsoeSensor(CoordinatorEntity, RestoreSensor):
         await super().async_added_to_hass()
         if (last_sensor_data := await self.async_get_last_sensor_data()) is not None:
             # new introduced in 2022.04
-            self._attr_native_value = last_sensor_data.native_value
+            if last_sensor_data.native_value is not None:
+                self._attr_native_value = last_sensor_data.native_value
             if last_sensor_data._attr_extra_state_attributes is not None:
                 self._attr_extra_state_attributes = dict(last_sensor_data._attr_extra_state_attributes)
 
     async def async_update(self) -> None:
         """Get the latest data and updates the states."""
+        value: Any = None
         try:
             value = self.entity_description.value_fn(self.coordinator.processed_data())
             #Check if value if a panda timestamp and if so convert to an HA compatible format
@@ -122,7 +124,7 @@ class EntsoeSensor(CoordinatorEntity, RestoreSensor):
             self._attr_native_value = value
         except (TypeError, IndexError):
             # No data available
-            self._attr_native_value = None
+            _LOGGER.warning(f"Unable to update entity due to data processing error: {value}")
 
         # These return pd.timestamp objects and are therefore not able to get into attributes
         invalid_keys = {"time_min", "time_max"}
@@ -143,6 +145,7 @@ class EntsoeSensor(CoordinatorEntity, RestoreSensor):
             utcnow().replace(minute=0, second=0) + timedelta(hours=1),
         )
 
+
     @property
     def extra_restore_state_data(self) -> EntsoeSensorExtraStoredData:
         """Return sensor specific state data to be restored."""
@@ -154,6 +157,23 @@ class EntsoeSensor(CoordinatorEntity, RestoreSensor):
         if (restored_last_extra_data := await self.async_get_last_extra_data()) is None:
             return None
 
+        if self.description.key == "avg_price":
+            self.coordinator.data = self.parse_attribute_data_to_coordinator_data(restored_last_extra_data.as_dict()["_attr_extra_state_attributes"])
+
         return EntsoeSensorExtraStoredData.from_dict(
            restored_last_extra_data.as_dict()
        )
+
+    def parse_attribute_data_to_coordinator_data(self, attributes):
+        data_all = { item["time"] : item["price"] for item in attributes.get("prices")[-48:] }
+        if len(attributes.get("prices")) > 48:
+            data_today = { item["time"] : item["price"] for item in attributes.get("prices")[-48:-24] }
+            data_tomorrow = { item["time"] : item["price"] for item in attributes.get("prices")[-24:] }
+        else:
+            data_today = { item["time"] : item["price"] for item in attributes.get("prices")[-24:]} #new_state.attributes.get("prices")[-24:].to_dict()
+            data_tomorrow = {}
+        return {
+            "data": data_all,
+            "dataToday": data_today,
+            "dataTomorrow": data_tomorrow,            
+        }

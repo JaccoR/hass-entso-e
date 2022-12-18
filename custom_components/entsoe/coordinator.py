@@ -54,7 +54,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
             hass,
             logger,
             name="ENTSO-e coordinator",
-            update_interval=timedelta(seconds=60),
+            update_interval=timedelta(minutes=60),
         )
 
     def calc_price(self, value, fake_dt=None, no_template=False) -> float:

@@ -15,6 +15,8 @@ from homeassistant.helpers.selector import (
     SelectSelectorConfig,
     SelectSelector,
     SelectOptionDict,
+    TemplateSelectorConfig,
+    TemplateSelector,
 )
 from homeassistant.helpers.template import Template
 
@@ -182,7 +184,7 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
                     vol.Optional(
                         CONF_VAT_VALUE, default=AREA_INFO[self.area]["VAT"]
                     ): vol.All(vol.Coerce(float, "must be a number")),
-                    vol.Optional(CONF_MODIFYER, default=""): vol.All(vol.Coerce(str)),
+                    vol.Optional(CONF_MODIFYER, default=""): TemplateSelector(TemplateSelectorConfig()),
                     vol.Optional(CONF_CALCULATION_MODE, default=CALCULATION_MODE["default"]): SelectSelector(
                         SelectSelectorConfig(
                             options=[
@@ -274,7 +276,7 @@ class EntsoeOptionFlowHandler(OptionsFlow):
                     ): vol.All(vol.Coerce(float, "must be a number")),
                     vol.Optional(
                         CONF_MODIFYER, default=self.config_entry.options[CONF_MODIFYER]
-                    ): vol.All(vol.Coerce(str)),
+                    ): TemplateSelector(TemplateSelectorConfig()),
                     vol.Optional(CONF_CALCULATION_MODE, default=calculation_mode_default ): SelectSelector(
                         SelectSelectorConfig(
                             options=[

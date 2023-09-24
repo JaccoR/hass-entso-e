@@ -276,7 +276,7 @@ class EntsoeOptionFlowHandler(OptionsFlow):
                     ): vol.All(vol.Coerce(float, "must be a number")),
                     vol.Optional(
                         CONF_MODIFYER, default=self.config_entry.options[CONF_MODIFYER]
-                    ): TemplateSelector(TemplateSelectorConfig()),
+                    ):  TemplateSelector(TemplateSelectorConfig()),
                     vol.Optional(CONF_CALCULATION_MODE, default=calculation_mode_default ): SelectSelector(
                         SelectSelectorConfig(
                             options=[

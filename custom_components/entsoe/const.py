@@ -6,8 +6,8 @@ from collections.abc import Callable
 from homeassistant.components.sensor import SensorEntityDescription, SensorDeviceClass, SensorStateClass
 from homeassistant.const import (
     CURRENCY_EURO,
-    ENERGY_KILO_WATT_HOUR,
     PERCENTAGE,
+    UnitOfEnergy,
 )
 from homeassistant.helpers.typing import StateType
 
@@ -99,32 +99,32 @@ SENSOR_TYPES: tuple[EntsoeEntityDescription, ...] = (
     EntsoeEntityDescription(
         key="current_price",
         name="Current electricity market price",
-        native_unit_of_measurement=f"{CURRENCY_EURO}/{ENERGY_KILO_WATT_HOUR}",
+        native_unit_of_measurement=f"{CURRENCY_EURO}/{UnitOfEnergy.KILO_WATT_HOUR}",
         value_fn=lambda data: data["current_price"],
         state_class=SensorStateClass.MEASUREMENT
     ),
     EntsoeEntityDescription(
         key="next_hour_price",
         name="Next hour electricity market price",
-        native_unit_of_measurement=f"{CURRENCY_EURO}/{ENERGY_KILO_WATT_HOUR}",
+        native_unit_of_measurement=f"{CURRENCY_EURO}/{UnitOfEnergy.KILO_WATT_HOUR}",
         value_fn=lambda data: data["next_hour_price"],
     ),
     EntsoeEntityDescription(
         key="min_price",
         name="Lowest energy price today",
-        native_unit_of_measurement=f"{CURRENCY_EURO}/{ENERGY_KILO_WATT_HOUR}",
+        native_unit_of_measurement=f"{CURRENCY_EURO}/{UnitOfEnergy.KILO_WATT_HOUR}",
         value_fn=lambda data: data["min_price"],
     ),
     EntsoeEntityDescription(
         key="max_price",
         name="Highest energy price today",
-        native_unit_of_measurement=f"{CURRENCY_EURO}/{ENERGY_KILO_WATT_HOUR}",
+        native_unit_of_measurement=f"{CURRENCY_EURO}/{UnitOfEnergy.KILO_WATT_HOUR}",
         value_fn=lambda data: data["max_price"],
     ),
     EntsoeEntityDescription(
         key="avg_price",
         name="Average electricity price today",
-        native_unit_of_measurement=f"{CURRENCY_EURO}/{ENERGY_KILO_WATT_HOUR}",
+        native_unit_of_measurement=f"{CURRENCY_EURO}/{UnitOfEnergy.KILO_WATT_HOUR}",
         value_fn=lambda data: data["avg_price"],
     ),
     EntsoeEntityDescription(

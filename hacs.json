@@ -1,4 +1,5 @@
 {
   "name": "ENTSO-e Transparency Platform",
+  "homeassistant": "2024.1.0",
   "render_readme": true
 }

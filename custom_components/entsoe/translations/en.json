@@ -8,14 +8,15 @@
             "area": "Area*",
             "advanced_options": "I want to set VAT, template and calculation method (next step)",
             "modifyer": "Price Modifyer Template (Optional)",
+            "currency": "Currency of the modified price (Optional)",
             "name": "Name (Optional)"
           }
       },
       "extra": {
         "data":{
           "VAT_value": "VAT tariff",
-          "modifyer": "Price Modifyer Template (Optional)"
-
+          "modifyer": "Price Modifyer Template (Optional)",
+          "currency": "Currency of the modified price (Optional)"
         }
       }
     },
@@ -33,6 +34,7 @@
           "api_key": "Your API Key",
           "area": "Area*",
           "modifyer": "Price Modifyer Template (Optional)",
+          "currency": "Currency of the modified price (Optional)",
           "VAT_value": "VAT tariff",
           "name": "Name (Optional)"
         }

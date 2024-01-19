@@ -22,6 +22,7 @@ from homeassistant.helpers.template import Template
 
 from .const import (
     CONF_MODIFYER,
+    CONF_CURRENCY,
     CONF_API_KEY,
     CONF_ENTITY_NAME,
     CONF_AREA,
@@ -33,6 +34,7 @@ from .const import (
     UNIQUE_ID,
     AREA_INFO,
     DEFAULT_MODIFYER,
+    DEFAULT_CURRENCY,
     CALCULATION_MODE
 )
 
@@ -46,6 +48,7 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
         self.advanced_options = None
         self.api_key = None
         self.modifyer = None
+        self.currency = None
         self.name = ""
 
     VERSION = 1
@@ -85,6 +88,7 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
                 return await self.async_step_extra()
             user_input[CONF_VAT_VALUE] = 0
             user_input[CONF_MODIFYER] = DEFAULT_MODIFYER
+            user_input[CONF_CURRENCY] = DEFAULT_CURRENCY
             user_input[CONF_CALCULATION_MODE] = CALCULATION_MODE["default"]
             if not already_configured:
                 return self.async_create_entry(
@@ -94,6 +98,7 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
                         CONF_API_KEY: user_input[CONF_API_KEY],
                         CONF_AREA: user_input[CONF_AREA],
                         CONF_MODIFYER: user_input[CONF_MODIFYER],
+                        CONF_CURRENCY: user_input[CONF_CURRENCY],
                         CONF_ADVANCED_OPTIONS: user_input[CONF_ADVANCED_OPTIONS],
                         CONF_VAT_VALUE: user_input[CONF_VAT_VALUE],
                         CONF_ENTITY_NAME: user_input[CONF_ENTITY_NAME],
@@ -153,6 +158,8 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
                 user_input[CONF_MODIFYER] = re.sub(
                     r"\s{2,}", "", user_input[CONF_MODIFYER]
                 )
+            if user_input[CONF_CURRENCY] in (None, ""):
+                user_input[CONF_CURRENCY] = DEFAULT_CURRENCY
 
             template_ok = await self._valid_template(user_input[CONF_MODIFYER])
 
@@ -166,6 +173,7 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
                                 CONF_API_KEY: user_input[CONF_API_KEY],
                                 CONF_AREA: user_input[CONF_AREA],
                                 CONF_MODIFYER: user_input[CONF_MODIFYER],
+                                CONF_CURRENCY: user_input[CONF_CURRENCY],
                                 CONF_VAT_VALUE: user_input[CONF_VAT_VALUE],
                                 CONF_ENTITY_NAME: user_input[CONF_ENTITY_NAME],
                                 CONF_CALCULATION_MODE: user_input[CONF_CALCULATION_MODE]
@@ -185,6 +193,7 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
                         CONF_VAT_VALUE, default=AREA_INFO[self.area]["VAT"]
                     ): vol.All(vol.Coerce(float, "must be a number")),
                     vol.Optional(CONF_MODIFYER, default=""): TemplateSelector(TemplateSelectorConfig()),
+                    vol.Optional(CONF_CURRENCY, default=DEFAULT_CURRENCY): vol.All(vol.Coerce(str)),
                     vol.Optional(CONF_CALCULATION_MODE, default=CALCULATION_MODE["default"]): SelectSelector(
                         SelectSelectorConfig(
                             options=[
@@ -240,6 +249,8 @@ class EntsoeOptionFlowHandler(OptionsFlow):
                 user_input[CONF_MODIFYER] = re.sub(
                     r"\s{2,}", "", user_input[CONF_MODIFYER]
                 )
+            if user_input[CONF_CURRENCY] in (None, ""):
+                user_input[CONF_CURRENCY] = DEFAULT_CURRENCY
 
             template_ok = await self._valid_template(user_input[CONF_MODIFYER])
 
@@ -275,9 +286,17 @@ class EntsoeOptionFlowHandler(OptionsFlow):
                         default=self.config_entry.options[CONF_VAT_VALUE],
                     ): vol.All(vol.Coerce(float, "must be a number")),
                     vol.Optional(
-                        CONF_MODIFYER, default=self.config_entry.options[CONF_MODIFYER]
-                    ):  TemplateSelector(TemplateSelectorConfig()),
-                    vol.Optional(CONF_CALCULATION_MODE, default=calculation_mode_default ): SelectSelector(
+                        CONF_MODIFYER,
+                        default=self.config_entry.options[CONF_MODIFYER],
+                    ): TemplateSelector(TemplateSelectorConfig()),
+                    vol.Optional(
+                        CONF_CURRENCY,
+                        default=self.config_entry.options[CONF_CURRENCY],
+                    ): vol.All(vol.Coerce(str)),
+                    vol.Optional(
+                        CONF_CALCULATION_MODE,
+                        default=calculation_mode_default,
+                    ): SelectSelector(
                         SelectSelectorConfig(
                             options=[
                                 SelectOptionDict(value=value, label=key)

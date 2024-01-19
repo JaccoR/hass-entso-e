@@ -1,23 +1,95 @@
 """ENTSO-e current electricity and gas price information service."""
 from __future__ import annotations
 
+from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import timedelta
 import logging
 from typing import Any
 
 import pandas as pd
 
-from homeassistant.components.sensor import DOMAIN, SensorStateClass, SensorDeviceClass, RestoreSensor, SensorExtraStoredData
+from homeassistant.components.sensor import DOMAIN, RestoreSensor, SensorDeviceClass, SensorEntityDescription, SensorExtraStoredData, SensorStateClass
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import (
+    CURRENCY_EURO,
+    PERCENTAGE,
+    UnitOfEnergy,
+)
 from homeassistant.core import HassJob, HomeAssistant
 from homeassistant.helpers import event
+from homeassistant.helpers.typing import StateType
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import utcnow
-from .const import ATTRIBUTION, CONF_COORDINATOR, CONF_ENTITY_NAME, DOMAIN, EntsoeEntityDescription, ICON, SENSOR_TYPES
+from .const import ATTRIBUTION, CONF_COORDINATOR, CONF_ENTITY_NAME, DOMAIN, ICON, SENSOR_TYPES
 from .coordinator import EntsoeCoordinator
 
 _LOGGER = logging.getLogger(__name__)
+
+@dataclass
+class EntsoeEntityDescription(SensorEntityDescription):
+    """Describes ENTSO-e sensor entity."""
+
+    value_fn: Callable[[dict], StateType] = None
+
+
+def sensor_descriptions(currency: str) -> tuple[EntsoeEntityDescription, ...]:
+    """Construct EntsoeEntityDescription."""
+    return (
+        EntsoeEntityDescription(
+            key="current_price",
+            name="Current electricity market price",
+            native_unit_of_measurement=f"{currency}/{UnitOfEnergy.KILO_WATT_HOUR}",
+            value_fn=lambda data: data["current_price"],
+            state_class=SensorStateClass.MEASUREMENT
+        ),
+        EntsoeEntityDescription(
+            key="next_hour_price",
+            name="Next hour electricity market price",
+            native_unit_of_measurement=f"{currency}/{UnitOfEnergy.KILO_WATT_HOUR}",
+            value_fn=lambda data: data["next_hour_price"],
+        ),
+        EntsoeEntityDescription(
+            key="min_price",
+            name="Lowest energy price today",
+            native_unit_of_measurement=f"{currency}/{UnitOfEnergy.KILO_WATT_HOUR}",
+            value_fn=lambda data: data["min_price"],
+        ),
+        EntsoeEntityDescription(
+            key="max_price",
+            name="Highest energy price today",
+            native_unit_of_measurement=f"{currency}/{UnitOfEnergy.KILO_WATT_HOUR}",
+            value_fn=lambda data: data["max_price"],
+        ),
+        EntsoeEntityDescription(
+            key="avg_price",
+            name="Average electricity price today",
+            native_unit_of_measurement=f"{currency}/{UnitOfEnergy.KILO_WATT_HOUR}",
+            value_fn=lambda data: data["avg_price"],
+        ),
+        EntsoeEntityDescription(
+            key="percentage_of_max",
+            name="Current percentage of highest electricity price today",
+            native_unit_of_measurement=f"{PERCENTAGE}",
+            icon="mdi:percent",
+            value_fn=lambda data: round(
+                data["current_price"] / data["max_price"] * 100, 1
+            ),
+        ),
+        EntsoeEntityDescription(
+            key="highest_price_time_today",
+            name="Time of highest price today",
+            device_class=SensorDeviceClass.TIMESTAMP,
+            value_fn=lambda data: data["time_max"],
+        ),
+        EntsoeEntityDescription(
+            key="lowest_price_time_today",
+            name="Time of lowest price today",
+            device_class=SensorDeviceClass.TIMESTAMP,
+            value_fn=lambda data: data["time_min"],
+        ),
+    )
 
 
 async def async_setup_entry(
@@ -30,7 +102,7 @@ async def async_setup_entry(
 
     entities = []
     entity = {}
-    for description in SENSOR_TYPES:
+    for description in sensor_descriptions(currency = config_entry.options[CONF_CURRENCY]):
         entity = description
         entities.append(
             EntsoeSensor(

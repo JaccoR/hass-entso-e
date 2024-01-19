@@ -34,11 +34,11 @@ Search for "ENTSO-e" when adding HACS integrations and add "ENTSO-e Transparency
 ------
 ## Configuration
 
-The sensors can be added using the web UI. In the web UI you can add your API-key and country and the sensors will automatically be added to your system. There is an optional field for an cost modifyer template.
+The sensors can be added using the web UI. In the web UI you can add your API-key and country and the sensors will automatically be added to your system. There is an optional field for a cost modifyer template and resulting currency.
 
 ### Cost Modifyer Template
 
-In the optional field `Price Modifyer Template` a template to modify the price to add additional costs, such as fixed costs per kWh and VAT, can be added. When left empty, no additional costs are added.
+In the optional field `Price Modifyer Template` a template to modify the price to add additional costs (such as fixed costs per kWh and VAT) and currency conversion (based on a currency sensor) can be specified. When left empty, no additional costs are added.
 In this template `now()` always refers start of the hour of that price and `current_price` refers to the price itself. This way day ahead price can be modified to correct for extra costs.
 
 An example template is given below. You can find and share other templates [here](https://github.com/JaccoR/hass-entso-e/discussions/categories/price-modifyer-templates).

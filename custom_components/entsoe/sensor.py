@@ -12,7 +12,7 @@ import pandas as pd
 from homeassistant.components.sensor import DOMAIN, RestoreSensor, SensorDeviceClass, SensorEntityDescription, SensorExtraStoredData, SensorStateClass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
-    CURRENCY_EURO,
+    CONF_CURRENCY,
     PERCENTAGE,
     UnitOfEnergy,
 )
@@ -22,7 +22,7 @@ from homeassistant.helpers.typing import StateType
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import utcnow
-from .const import ATTRIBUTION, CONF_COORDINATOR, CONF_ENTITY_NAME, DOMAIN, ICON, SENSOR_TYPES
+from .const import ATTRIBUTION, CONF_COORDINATOR, CONF_ENTITY_NAME, DOMAIN, ICON
 from .coordinator import EntsoeCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -202,7 +202,8 @@ class EntsoeSensor(CoordinatorEntity, RestoreSensor):
 
         # These return pd.timestamp objects and are therefore not able to get into attributes
         invalid_keys = {"time_min", "time_max"}
-        existing_entities = [type.key for type in SENSOR_TYPES]
+        # Currency is immaterial to the entity key
+        existing_entities = [type.key for type in sensor_descriptions(currency = "")]
         if self.description.key == "avg_price" and self._attr_native_value is not None:
             self._attr_extra_state_attributes = {x: self.coordinator.processed_data()[x] for x in self.coordinator.processed_data() if x not in invalid_keys and x not in existing_entities}
 

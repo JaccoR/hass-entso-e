@@ -1,15 +1,4 @@
-from __future__ import annotations
-
-from dataclasses import dataclass
-from collections.abc import Callable
-
-from homeassistant.components.sensor import SensorEntityDescription, SensorDeviceClass, SensorStateClass
-from homeassistant.const import (
-    CURRENCY_EURO,
-    PERCENTAGE,
-    UnitOfEnergy,
-)
-from homeassistant.helpers.typing import StateType
+from homeassistant.const import CURRENCY_EURO
 
 ATTRIBUTION = "Data provided by ENTSO-e Transparency Platform"
 DOMAIN = "entsoe"
@@ -22,11 +11,13 @@ CONF_ENTITY_NAME = "name"
 CONF_AREA = "area"
 CONF_COORDINATOR = "coordinator"
 CONF_MODIFYER = "modifyer"
+CONF_CURRENCY = "currency"
 CONF_ADVANCED_OPTIONS = "advanced_options"
 CONF_CALCULATION_MODE = "calculation_mode"
 CONF_VAT_VALUE = "VAT_value"
 
 DEFAULT_MODIFYER = "{{current_price}}"
+DEFAULT_CURRENCY = CURRENCY_EURO
 
 #default is only for internal use / backwards compatibility
 CALCULATION_MODE = { "default": "publish", "rotation": "rotation", "sliding": "sliding", "publish": "publish" }
@@ -87,65 +78,3 @@ AREA_INFO = {"AT":{"code":"AT", "name":"Austria", "VAT":0.21, "Currency":"EUR"},
             #  "TR":{"code":"TR", "name":"Turkey", "VAT":0.21, "Currency":"EUR"},
             #  "UA":{"code":"UA", "name":"Ukraine", "VAT":0.21, "Currency":"EUR"},
             }
-
-@dataclass
-class EntsoeEntityDescription(SensorEntityDescription):
-    """Describes ENTSO-e sensor entity."""
-
-    value_fn: Callable[[dict], StateType] = None
-
-
-SENSOR_TYPES: tuple[EntsoeEntityDescription, ...] = (
-    EntsoeEntityDescription(
-        key="current_price",
-        name="Current electricity market price",
-        native_unit_of_measurement=f"{CURRENCY_EURO}/{UnitOfEnergy.KILO_WATT_HOUR}",
-        value_fn=lambda data: data["current_price"],
-        state_class=SensorStateClass.MEASUREMENT
-    ),
-    EntsoeEntityDescription(
-        key="next_hour_price",
-        name="Next hour electricity market price",
-        native_unit_of_measurement=f"{CURRENCY_EURO}/{UnitOfEnergy.KILO_WATT_HOUR}",
-        value_fn=lambda data: data["next_hour_price"],
-    ),
-    EntsoeEntityDescription(
-        key="min_price",
-        name="Lowest energy price today",
-        native_unit_of_measurement=f"{CURRENCY_EURO}/{UnitOfEnergy.KILO_WATT_HOUR}",
-        value_fn=lambda data: data["min_price"],
-    ),
-    EntsoeEntityDescription(
-        key="max_price",
-        name="Highest energy price today",
-        native_unit_of_measurement=f"{CURRENCY_EURO}/{UnitOfEnergy.KILO_WATT_HOUR}",
-        value_fn=lambda data: data["max_price"],
-    ),
-    EntsoeEntityDescription(
-        key="avg_price",
-        name="Average electricity price today",
-        native_unit_of_measurement=f"{CURRENCY_EURO}/{UnitOfEnergy.KILO_WATT_HOUR}",
-        value_fn=lambda data: data["avg_price"],
-    ),
-    EntsoeEntityDescription(
-        key="percentage_of_max",
-        name="Current percentage of highest electricity price today",
-        native_unit_of_measurement=f"{PERCENTAGE}",
-        icon="mdi:percent",
-        value_fn=lambda data: round(
-            data["current_price"] / data["max_price"] * 100, 1
-        ),
-    ),
-    EntsoeEntityDescription(
-        key="highest_price_time_today",
-        name="Time of highest price today",
-        device_class=SensorDeviceClass.TIMESTAMP,
-        value_fn=lambda data: data["time_max"],
-    ),
-    EntsoeEntityDescription(
-        key="lowest_price_time_today",
-        name="Time of lowest price today",
-        device_class=SensorDeviceClass.TIMESTAMP,
-        value_fn=lambda data: data["time_min"],
-    ),
-)

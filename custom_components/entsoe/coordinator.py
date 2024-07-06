@@ -5,6 +5,7 @@ from datetime import timedelta
 from multiprocessing import AuthenticationError
 from aiohttp import ClientError
 import pandas as pd
+import tzdata     # for timezone conversions in panda
 from entsoe import EntsoePandasClient
 from entsoe.exceptions import NoMatchingDataError
 from requests.exceptions import HTTPError
@@ -34,7 +35,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         self.area = AREA_INFO[area]["code"]
         self.calculation_mode = calculation_mode
         self.vat = VAT
-
+        self.__TIMEZONE = dt.now().tzinfo
 
         # Check incase the sensor was setup using config flow.
         # This blow up if the template isnt valid.
@@ -94,7 +95,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
 
         time_zone = dt.now().tzinfo
         # We request data for yesterday up until tomorrow.
-        yesterday = pd.Timestamp.now(tz=str(time_zone)).replace(hour=0, minute=0, second=0) - pd.Timedelta(days = 1)
+        yesterday = pd.Timestamp.now(tz=self.__TIMEZONE).replace(hour=0, minute=0, second=0) - pd.Timedelta(days = 1)
         tomorrow = yesterday + pd.Timedelta(hours = 71)
 
         data = await self.fetch_prices(yesterday, tomorrow)

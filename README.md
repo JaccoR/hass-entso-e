@@ -27,8 +27,9 @@ The integration adds the following sensors:
 ### HACS
 
 Search for "ENTSO-e" when adding HACS integrations and add "ENTSO-e Transparency Platform". 
-Or use this link to go directly there:
-[![Or use this link.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=JaccoR&repository=hass-entso-e&category=integration) 
+
+Or use this link to go directly there: [![Or use this link.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=JaccoR&repository=hass-entso-e&category=integration) 
+
 Restart Home Assistant and add the integration through your settings. 
 
 ### Manual

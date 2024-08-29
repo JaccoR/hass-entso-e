@@ -18,7 +18,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt
 import homeassistant.helpers.config_validation as cv
-from homeassistant.helpers.template import Template, attach
+from homeassistant.helpers.template import Template
 from jinja2 import pass_context
 
 from .const import DEFAULT_MODIFYER, AREA_INFO, CALCULATION_MODE
@@ -47,8 +47,6 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         else:
             if self.modifyer.template in ("", None):
                 self.modifyer = cv.template(DEFAULT_MODIFYER)
-
-        attach(self.hass, self.modifyer)
 
         logger = logging.getLogger(__name__)
         super().__init__(

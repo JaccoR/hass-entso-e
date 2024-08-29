@@ -24,12 +24,12 @@ The integration adds the following sensors:
 ------
 ## Installation
 
-### Manual
-Download this repository and place the contents of `custom_components` in your own `custom_components` map of your Home Assistant installation. Restart Home Assistant and add the integration through your settings. 
-
 ### HACS
 
-Search for "ENTSO-e" when adding HACS integrations and add "ENTSO-e Transparency Platform". Restart Home Assistant and add the integration through your settings. 
+Search for "ENTSO-e" when adding HACS integrations and add "ENTSO-e Transparency Platform". [![Or use this link.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=JaccoR&repository=hass-entso-e&category=integration) Restart Home Assistant and add the integration through your settings. 
+
+### Manual
+Download this repository and place the contents of `custom_components` in your own `custom_components` map of your Home Assistant installation. Restart Home Assistant and add the integration through your settings. 
 
 ------
 ## Configuration

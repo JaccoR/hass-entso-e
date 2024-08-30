@@ -187,9 +187,11 @@ class EntsoeSensor(CoordinatorEntity, RestoreSensor):
 
     async def async_update(self) -> None:
         """Get the latest data and updates the states."""
+        _LOGGER.debug(f"update function for '{self.entity_id} called.'")
         value: Any = None
         if self.coordinator.data is not None:
             try:
+                _LOGGER.debug(f"current coordinator.data value: {self.coordinator.data}")
                 value = self.entity_description.value_fn(self.coordinator.processed_data())
                 #Check if value if a panda timestamp and if so convert to an HA compatible format
                 if isinstance(value, pd._libs.tslibs.timestamps.Timestamp):
@@ -198,7 +200,7 @@ class EntsoeSensor(CoordinatorEntity, RestoreSensor):
                 self._attr_native_value = value
             except Exception as exc:
                 # No data available
-                _LOGGER.warning(f"Unable to update entity due to data processing error: {value} and error: {exc}")
+                _LOGGER.warning(f"Unable to update entity '{self.entity_id}' due to data processing error: {value} and error: {exc} , data: {self.coordinator.data}")
 
         # These return pd.timestamp objects and are therefore not able to get into attributes
         invalid_keys = {"time_min", "time_max"}
@@ -220,20 +222,25 @@ class EntsoeSensor(CoordinatorEntity, RestoreSensor):
             utcnow().replace(minute=0, second=0) + timedelta(hours=1),
         )
 
-
     @property
     def extra_restore_state_data(self) -> EntsoeSensorExtraStoredData:
         """Return sensor specific state data to be restored."""
         return EntsoeSensorExtraStoredData(self._attr_native_value, None, self._attr_extra_state_attributes if hasattr(self, "_attr_extra_state_attributes") else None)
 
-
     async def async_get_last_sensor_data(self):
         """Restore Entsoe-e Sensor Extra Stored Data."""
+        _LOGGER.debug("restoring sensor data")
         if (restored_last_extra_data := await self.async_get_last_extra_data()) is None:
             return None
 
-        if self.description.key == "avg_price":
-            self.coordinator.data = self.parse_attribute_data_to_coordinator_data(restored_last_extra_data.as_dict()["_attr_extra_state_attributes"])
+        if self.description.key == "avg_price" and self.coordinator.data is None:
+            _LOGGER.debug("fallback on stored state to fill coordinator.data object")
+            newest_stored_timestamp = pd.Timestamp(restored_last_extra_data.as_dict()["_attr_extra_state_attributes"].get("prices")[-1]["time"])
+            current_timestamp = pd.Timestamp.now(newest_stored_timestamp.tzinfo)
+            if newest_stored_timestamp < current_timestamp:
+                self.coordinator.data = self.parse_attribute_data_to_coordinator_data(restored_last_extra_data.as_dict()["_attr_extra_state_attributes"])
+            else:
+                _LOGGER.debug("Stored state dit not contain data of today. Skipped restoring coordinator data.")
 
         return EntsoeSensorExtraStoredData.from_dict(
            restored_last_extra_data.as_dict()

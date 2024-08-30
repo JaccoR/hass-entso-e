@@ -1,18 +1,13 @@
 from __future__ import annotations
 
-import asyncio
 from datetime import timedelta
-from multiprocessing import AuthenticationError
-from aiohttp import ClientError
 import pandas as pd
-import tzdata     # for timezone conversions in panda
 from entsoe import EntsoePandasClient
-from entsoe.exceptions import NoMatchingDataError
 from requests.exceptions import HTTPError
-
-import logging
-
 from datetime import datetime
+
+import tzdata     # for timezone conversions in panda
+import logging
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -91,19 +86,22 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         self.logger.debug("Fetching ENTSO-e data")
         self.logger.debug(self.area)
 
-        time_zone = dt.now().tzinfo
         # We request data for yesterday up until tomorrow.
         yesterday = pd.Timestamp.now(tz=self.__TIMEZONE).replace(hour=0, minute=0, second=0) - pd.Timedelta(days = 1)
         tomorrow = yesterday + pd.Timedelta(hours = 71)
 
+        self.logger.debug(f"fetching prices for start date: {yesterday} to end date: {tomorrow}")
         data = await self.fetch_prices(yesterday, tomorrow)
+        self.logger.debug(f"received data = {data}")
         if data is not None:
             parsed_data = self.parse_hourprices(data)
             data_all = parsed_data[-48:].to_dict()
             if parsed_data.size > 48:
+                self.logger.debug(f"received data for yesterday, today and tomorrow")
                 data_today = parsed_data[-48:-24].to_dict()
                 data_tomorrow = parsed_data[-24:].to_dict()
             else:
+                self.logger.debug(f"received data for yesterday and today")
                 data_today = parsed_data[-24:].to_dict()
                 data_tomorrow = {}
 
@@ -113,8 +111,10 @@ class EntsoeCoordinator(DataUpdateCoordinator):
                 "dataTomorrow": data_tomorrow,
             }
         elif self.data is not None:
+            self.logger.debug(f"received no data so fallback on existing data.")
             newest_timestamp_today = pd.Timestamp(list(self.data["dataToday"])[-1])
             if any(self.data["dataTomorrow"]) and newest_timestamp_today < pd.Timestamp.now(newest_timestamp_today.tzinfo):
+                self.logger.debug(f"detected midnight switch values dataTomorrow to dataToday")
                 self.data["dataToday"] = self.data["dataTomorrow"]
                 self.data["dataTomorrow"] = {}
                 data_list = list(self.data["data"])
@@ -153,14 +153,11 @@ class EntsoeCoordinator(DataUpdateCoordinator):
             else:
                 self.logger.warning(f"Warning the integration doesn't have any up to date local data this means that entities won't get updated but access remains to restorable entities: {exc}.")
 
-
-
     def api_update(self, start_date, end_date, api_key):
         client = EntsoePandasClient(api_key=api_key)
         return client.query_day_ahead_prices(
             country_code=self.area, start=start_date, end=end_date
         )
-
 
     def processed_data(self):
         filtered_hourprices = self._filter_calculated_hourprices(self.data)

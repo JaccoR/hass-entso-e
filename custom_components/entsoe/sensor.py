@@ -12,7 +12,6 @@ import pandas as pd
 from homeassistant.components.sensor import DOMAIN, RestoreSensor, SensorDeviceClass, SensorEntityDescription, SensorExtraStoredData, SensorStateClass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
-    CONF_CURRENCY,
     PERCENTAGE,
     UnitOfEnergy,
 )
@@ -22,7 +21,7 @@ from homeassistant.helpers.typing import StateType
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import utcnow
-from .const import ATTRIBUTION, CONF_COORDINATOR, CONF_ENTITY_NAME, DOMAIN, ICON
+from .const import ATTRIBUTION, CONF_COORDINATOR, CONF_ENTITY_NAME, DOMAIN, ICON, DEFAULT_CURRENCY, CONF_CURRENCY
 from .coordinator import EntsoeCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -102,7 +101,7 @@ async def async_setup_entry(
 
     entities = []
     entity = {}
-    for description in sensor_descriptions(currency = config_entry.options[CONF_CURRENCY]):
+    for description in sensor_descriptions(currency = config_entry.options.get(CONF_CURRENCY, DEFAULT_CURRENCY)):
         entity = description
         entities.append(
             EntsoeSensor(

@@ -87,48 +87,32 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         self.logger.debug(self.area)
 
         # We request data for yesterday up until tomorrow.
-        yesterday = pd.Timestamp.now(tz=self.__TIMEZONE).replace(hour=0, minute=0, second=0) - pd.Timedelta(days = 1)
-        tomorrow = yesterday + pd.Timedelta(hours = 71)
+        today = pd.Timestamp.now(tz=self.__TIMEZONE).normalize() 
+        yesterday = today - pd.Timedelta(days = 1)
+        tomorrow_evening = yesterday + pd.Timedelta(hours = 71)
 
-        self.logger.debug(f"fetching prices for start date: {yesterday} to end date: {tomorrow}")
-        data = await self.fetch_prices(yesterday, tomorrow)
+        self.logger.debug(f"fetching prices for start date: {yesterday} to end date: {tomorrow_evening}")
+        data = await self.fetch_prices(yesterday, tomorrow_evening)
         self.logger.debug(f"received data = {data}")
+
         if data is not None:
             parsed_data = self.parse_hourprices(data)
-            data_all = parsed_data[-48:].to_dict()
-            if parsed_data.size > 48:
-                self.logger.debug(f"received data for yesterday, today and tomorrow")
-                data_today = parsed_data[-48:-24].to_dict()
-                data_tomorrow = parsed_data[-24:].to_dict()
-            else:
-                self.logger.debug(f"received data for yesterday and today")
-                data_today = parsed_data[-24:].to_dict()
-                data_tomorrow = {}
-
+            self.logger.debug(f"received data for {data.count()} hours")
+            
             return {
-                "data": data_all,
-                "dataToday": data_today,
-                "dataTomorrow": data_tomorrow,
+                "data": parsed_data,
+                "dataToday": parsed_data[today: today + pd.Timedelta(days=1) - pd.Timedelta(seconds=1)],
+                "dataTomorrow": parsed_data[today + pd.Timedelta(days=1) : tomorrow_evening],
             }
         elif self.data is not None:
             self.logger.debug(f"received no data so fallback on existing data.")
-            newest_timestamp_today = pd.Timestamp(list(self.data["dataToday"])[-1])
-            if any(self.data["dataTomorrow"]) and newest_timestamp_today < pd.Timestamp.now(newest_timestamp_today.tzinfo):
-                self.logger.debug(f"detected midnight switch values dataTomorrow to dataToday")
-                self.data["dataToday"] = self.data["dataTomorrow"]
-                self.data["dataTomorrow"] = {}
-                data_list = list(self.data["data"])
-                new_data_dict = {}
-                if len(data_list) >= 24:
-                    for hour, price in self.data["data"].items()[-24:]:
-                        new_data_dict[hour] = price
-                    self.data["data"] = new_data_dict
-
+            
             return {
                 "data": self.data["data"],
-                "dataToday": self.data["dataToday"],
-                "dataTomorrow": self.data["dataTomorrow"],
+                "dataToday": self.data[today: today + pd.Timedelta(days=1) - pd.Timedelta(seconds=1)],
+                "dataTomorrow": self.data[today + pd.Timedelta(days=1) : tomorrow_evening],
             }
+        
 
     async def fetch_prices(self, start_date, end_date):
         try:
@@ -178,10 +162,10 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         time_zone = dt.now().tzinfo
         hourprices = data["data"]
         if self.calculation_mode == CALCULATION_MODE["rotation"]:
-            now = pd.Timestamp.now(tz=str(time_zone)).replace(hour=0, minute=0, second=0, microsecond=0)
+            now = pd.Timestamp.now(tz=str(time_zone)).normalize()
             return { hour: price for hour, price in hourprices.items() if pd.to_datetime(hour) >= now and pd.to_datetime(hour) < now + timedelta(days=1) }
         elif self.calculation_mode == CALCULATION_MODE["sliding"]:
-            now = pd.Timestamp.now(tz=str(time_zone)).replace(minute=0, second=0, microsecond=0)
+            now = pd.Timestamp.now(tz=str(time_zone)).normalize()
             return { hour: price for hour, price in hourprices.items() if pd.to_datetime(hour) >= now }
         elif self.calculation_mode == CALCULATION_MODE["publish"]:
             return data["data"]

@@ -18,9 +18,9 @@ from jinja2 import pass_context
 
 from .const import DEFAULT_MODIFYER, AREA_INFO, CALCULATION_MODE
 
-
 class EntsoeCoordinator(DataUpdateCoordinator):
     """Get the latest data and update the states."""
+    today = None
 
     def __init__(self, hass: HomeAssistant, api_key, area, modifyer, calculation_mode = CALCULATION_MODE["default"], VAT = 0) -> None:
         """Initialize the data object."""
@@ -83,12 +83,16 @@ class EntsoeCoordinator(DataUpdateCoordinator):
 
     async def _async_update_data(self) -> dict:
         """Get the latest data from ENTSO-e"""
-        self.logger.debug("Fetching ENTSO-e data")
+        self.logger.debug("ENTSO-e DataUpdateCoordinator data update")
         self.logger.debug(self.area)
 
-        # We request data for yesterday up until tomorrow.
-        today = pd.Timestamp.now(tz=self.__TIMEZONE).normalize() 
-        yesterday = today - pd.Timedelta(days = 1)
+        now = pd.Timestamp.now(tz=self.__TIMEZONE)
+        self.today = now.normalize() 
+        if self.check_update_needed(now) is False:
+            self.logger.debug(f"Skipping api fetch. All data is already available")
+            return self.data
+
+        yesterday = self.today - pd.Timedelta(days = 1)
         tomorrow_evening = yesterday + pd.Timedelta(hours = 71)
 
         self.logger.debug(f"fetching prices for start date: {yesterday} to end date: {tomorrow_evening}")
@@ -97,30 +101,25 @@ class EntsoeCoordinator(DataUpdateCoordinator):
 
         if data is not None:
             parsed_data = self.parse_hourprices(data)
-            self.logger.debug(f"received data for {data.count()} hours")
+            self.logger.debug(f"received pricing data from entso-e for {data.count()} hours")
             
-            return {
-                "data": parsed_data,
-                "dataToday": parsed_data[today: today + pd.Timedelta(days=1) - pd.Timedelta(seconds=1)],
-                "dataTomorrow": parsed_data[today + pd.Timedelta(days=1) : tomorrow_evening],
-            }
-        elif self.data is not None:
-            self.logger.debug(f"received no data so fallback on existing data.")
-            
-            return {
-                "data": self.data["data"],
-                "dataToday": self.data[today: today + pd.Timedelta(days=1) - pd.Timedelta(seconds=1)],
-                "dataTomorrow": self.data[today + pd.Timedelta(days=1) : tomorrow_evening],
-            }
-        
+            return parsed_data
 
+    def check_update_needed(self, now):
+        if self.data is None:
+            return True
+        if self.get_data_today().count() != 24:
+            return True
+        if self.get_data_tomorrow().count() != 24 and now.hour > 12:
+            return True
+        return False
+    
     async def fetch_prices(self, start_date, end_date):
         try:
             # run api_update in async job
             resp = await self.hass.async_add_executor_job(
                 self.api_update, start_date, end_date, self.api_key
             )
-
             return resp
 
         except (HTTPError) as exc:
@@ -144,23 +143,31 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         )
 
     def processed_data(self):
-        filtered_hourprices = self._filter_calculated_hourprices(self.data)
+        filtered_hourprices = self._filter_calculated_hourprices()
+        today = pd.Timestamp.now(tz=self.__TIMEZONE).normalize() 
+
         return {
-            "current_price": self.get_current_hourprice(self.data["data"]),
-            "next_hour_price": self.get_next_hourprice(self.data["data"]),
+            "current_price": self.get_current_hourprice(self.data.to_dict()),
+            "next_hour_price": self.get_next_hourprice(self.data.to_dict()),
             "min_price": self.get_min_price(filtered_hourprices),
             "max_price": self.get_max_price(filtered_hourprices),
             "avg_price": self.get_avg_price(filtered_hourprices),
             "time_min": self.get_min_time(filtered_hourprices),
             "time_max": self.get_max_time(filtered_hourprices),
-            "prices_today": self.get_timestamped_prices(self.data["dataToday"]),
-            "prices_tomorrow": self.get_timestamped_prices(self.data["dataTomorrow"]),
-            "prices": self.get_timestamped_prices(self.data["data"]),
+            "prices_today": self.get_timestamped_prices(self.get_data_today().to_dict()),
+            "prices_tomorrow": self.get_timestamped_prices(self.get_data_tomorrow().to_dict()),
+            "prices": self.get_timestamped_prices(self.data.to_dict()),
         }
+    
+    def get_data_today(self):
+        return self.data[self.today: self.today + pd.Timedelta(days=1) - pd.Timedelta(seconds=1)]
+    
+    def get_data_tomorrow(self):
+        return self.data[self.today + pd.Timedelta(days=1) : self.today + pd.Timedelta(days=1) + pd.Timedelta(hours=23)]
 
-    def _filter_calculated_hourprices(self, data) -> list:
+    def _filter_calculated_hourprices(self) -> list:
         time_zone = dt.now().tzinfo
-        hourprices = data["data"]
+        hourprices = self.data.to_dict()
         if self.calculation_mode == CALCULATION_MODE["rotation"]:
             now = pd.Timestamp.now(tz=str(time_zone)).normalize()
             return { hour: price for hour, price in hourprices.items() if pd.to_datetime(hour) >= now and pd.to_datetime(hour) < now + timedelta(days=1) }
@@ -168,7 +175,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
             now = pd.Timestamp.now(tz=str(time_zone)).normalize()
             return { hour: price for hour, price in hourprices.items() if pd.to_datetime(hour) >= now }
         elif self.calculation_mode == CALCULATION_MODE["publish"]:
-            return data["data"]
+            return hourprices
 
     def get_next_hourprice(self, hourprices) -> int:
         for hour, price in hourprices.items():

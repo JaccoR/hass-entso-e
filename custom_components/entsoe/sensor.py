@@ -40,31 +40,35 @@ def sensor_descriptions(currency: str) -> tuple[EntsoeEntityDescription, ...]:
             key="current_price",
             name="Current electricity market price",
             native_unit_of_measurement=f"{currency}/{UnitOfEnergy.KILO_WATT_HOUR}",
-            value_fn=lambda data: data["current_price"],
-            state_class=SensorStateClass.MEASUREMENT
+            state_class=SensorStateClass.MEASUREMENT,
+            value_fn=lambda data: data["current_price"]
         ),
         EntsoeEntityDescription(
             key="next_hour_price",
             name="Next hour electricity market price",
             native_unit_of_measurement=f"{currency}/{UnitOfEnergy.KILO_WATT_HOUR}",
+            state_class=SensorStateClass.MEASUREMENT,
             value_fn=lambda data: data["next_hour_price"],
         ),
         EntsoeEntityDescription(
             key="min_price",
             name="Lowest energy price today",
             native_unit_of_measurement=f"{currency}/{UnitOfEnergy.KILO_WATT_HOUR}",
+            state_class=SensorStateClass.MEASUREMENT,
             value_fn=lambda data: data["min_price"],
         ),
         EntsoeEntityDescription(
             key="max_price",
             name="Highest energy price today",
             native_unit_of_measurement=f"{currency}/{UnitOfEnergy.KILO_WATT_HOUR}",
+            state_class=SensorStateClass.MEASUREMENT,
             value_fn=lambda data: data["max_price"],
         ),
         EntsoeEntityDescription(
             key="avg_price",
             name="Average electricity price today",
             native_unit_of_measurement=f"{currency}/{UnitOfEnergy.KILO_WATT_HOUR}",
+            state_class=SensorStateClass.MEASUREMENT,
             value_fn=lambda data: data["avg_price"],
         ),
         EntsoeEntityDescription(
@@ -72,6 +76,7 @@ def sensor_descriptions(currency: str) -> tuple[EntsoeEntityDescription, ...]:
             name="Current percentage of highest electricity price today",
             native_unit_of_measurement=f"{PERCENTAGE}",
             icon="mdi:percent",
+            state_class=SensorStateClass.MEASUREMENT,
             value_fn=lambda data: round(
                 data["current_price"] / data["max_price"] * 100, 1
             ),
@@ -113,42 +118,11 @@ async def async_setup_entry(
     # Add an entity for each sensor type
     async_add_entities(entities, True)
 
-class EntsoeSensorExtraStoredData(SensorExtraStoredData):
-    """Object to hold extra stored data."""
-    _attr_extra_state_attributes: any
-
-    def __init__(self, native_value, native_unit_of_measurement, _attr_extra_state_attributes) -> None:
-        super().__init__(native_value, native_unit_of_measurement)
-        self._attr_extra_state_attributes = _attr_extra_state_attributes  
-
-    def as_dict(self) -> dict[str, any]:
-        """Return a dict representation of the utility sensor data."""
-        data = super().as_dict()
-        data["_attr_extra_state_attributes"] = self._attr_extra_state_attributes if self._attr_extra_state_attributes is not None else None
-
-        return data
-
-    @classmethod
-    def from_dict(cls, restored: dict[str, Any]) -> EntsoeSensorExtraStoredData | None:
-        """Initialize a stored sensor state from a dict."""
-        extra = SensorExtraStoredData.from_dict(restored)
-        if extra is None:
-            return None
-
-        _attr_extra_state_attributes: any = restored["_attr_extra_state_attributes"] if "_attr_extra_state_attributes" in restored else None
-
-        return cls(
-            extra.native_value,
-            extra.native_unit_of_measurement,
-            _attr_extra_state_attributes
-        )  
-
 class EntsoeSensor(CoordinatorEntity, RestoreSensor):
     """Representation of a ENTSO-e sensor."""
 
     _attr_attribution = ATTRIBUTION
     _attr_icon = ICON
-    _attr_state_class = SensorStateClass.MEASUREMENT
 
     def __init__(self, coordinator: EntsoeCoordinator, description: EntsoeEntityDescription, name: str = "") -> None:
         """Initialize the sensor."""
@@ -165,8 +139,6 @@ class EntsoeSensor(CoordinatorEntity, RestoreSensor):
             self._attr_unique_id = f"entsoe.{description.key}"
             self._attr_name = f"{description.name}"
 
-        self._attr_device_class = SensorDeviceClass.MONETARY if description.device_class is None else description.device_class
-        self._attr_state_class = None if self._attr_device_class in [SensorDeviceClass.TIMESTAMP, SensorDeviceClass.MONETARY] else SensorStateClass.MEASUREMENT
         self.entity_description: EntsoeEntityDescription = description
 
         self._update_job = HassJob(self.async_schedule_update_ha_state)
@@ -174,23 +146,13 @@ class EntsoeSensor(CoordinatorEntity, RestoreSensor):
 
         super().__init__(coordinator)
 
-    async def async_added_to_hass(self):
-        """Handle entity which will be added."""
-        await super().async_added_to_hass()
-        # if (last_sensor_data := await self.async_get_last_sensor_data()) is not None:
-        #     # new introduced in 2022.04
-        #     if last_sensor_data.native_value is not None:
-        #         self._attr_native_value = last_sensor_data.native_value
-        #     if last_sensor_data._attr_extra_state_attributes is not None:
-        #         self._attr_extra_state_attributes = dict(last_sensor_data._attr_extra_state_attributes)
-
     async def async_update(self) -> None:
         """Get the latest data and updates the states."""
         _LOGGER.debug(f"update function for '{self.entity_id} called.'")
         value: Any = None
         if self.coordinator.data is not None:
             try:
-                _LOGGER.debug(f"current coordinator.data value: {self.coordinator.data}")
+                #_LOGGER.debug(f"current coordinator.data value: {self.coordinator.data}")
                 value = self.entity_description.value_fn(self.coordinator.processed_data())
                 #Check if value if a panda timestamp and if so convert to an HA compatible format
                 if isinstance(value, pd._libs.tslibs.timestamps.Timestamp):
@@ -221,41 +183,3 @@ class EntsoeSensor(CoordinatorEntity, RestoreSensor):
             self._update_job,
             utcnow().replace(minute=0, second=0) + timedelta(hours=1),
         )
-
-    @property
-    def extra_restore_state_data(self) -> EntsoeSensorExtraStoredData:
-        """Return sensor specific state data to be restored."""
-        return EntsoeSensorExtraStoredData(self._attr_native_value, None, self._attr_extra_state_attributes if hasattr(self, "_attr_extra_state_attributes") else None)
-
-    async def async_get_last_sensor_data(self):
-        """Restore Entsoe-e Sensor Extra Stored Data."""
-        _LOGGER.debug("restoring sensor data")
-        if (restored_last_extra_data := await self.async_get_last_extra_data()) is None:
-            return None
-
-        if self.description.key == "avg_price" and self.coordinator.data is None:
-            _LOGGER.debug("fallback on stored state to fill coordinator.data object")
-            newest_stored_timestamp = pd.Timestamp(restored_last_extra_data.as_dict()["_attr_extra_state_attributes"].get("prices")[-1]["time"])
-            current_timestamp = pd.Timestamp.now(newest_stored_timestamp.tzinfo)
-            if newest_stored_timestamp < current_timestamp:
-                self.coordinator.data = self.parse_attribute_data_to_coordinator_data(restored_last_extra_data.as_dict()["_attr_extra_state_attributes"])
-            else:
-                _LOGGER.debug("Stored state dit not contain data of today. Skipped restoring coordinator data.")
-
-        return EntsoeSensorExtraStoredData.from_dict(
-           restored_last_extra_data.as_dict()
-       )
-
-    def parse_attribute_data_to_coordinator_data(self, attributes):
-        data_all = {  pd.Timestamp(item["time"]) : item["price"] for item in attributes.get("prices")[-48:] }
-        if len(attributes.get("prices")) > 48:
-            data_today = {  pd.Timestamp(item["time"]) : item["price"] for item in attributes.get("prices")[-48:-24] }
-            data_tomorrow = {  pd.Timestamp(item["time"]) : item["price"] for item in attributes.get("prices")[-24:] }
-        else:
-            data_today = {  pd.Timestamp(item["time"]) : item["price"] for item in attributes.get("prices")[-24:]}
-            data_tomorrow = {}
-        return {
-            "data": data_all,
-            "dataToday": data_today,
-            "dataTomorrow": data_tomorrow,            
-        }

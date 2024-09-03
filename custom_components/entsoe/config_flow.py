@@ -291,7 +291,7 @@ class EntsoeOptionFlowHandler(OptionsFlow):
                     ): TemplateSelector(TemplateSelectorConfig()),
                     vol.Optional(
                         CONF_CURRENCY,
-                        default=self.config_entry.options[CONF_CURRENCY],
+                        default=self.config_entry.options.get(CONF_CURRENCY, DEFAULT_CURRENCY)
                     ): vol.All(vol.Coerce(str)),
                     vol.Optional(
                         CONF_CALCULATION_MODE,

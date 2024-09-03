@@ -12,7 +12,6 @@ import pandas as pd
 from homeassistant.components.sensor import DOMAIN, RestoreSensor, SensorDeviceClass, SensorEntityDescription, SensorExtraStoredData, SensorStateClass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
-    CONF_CURRENCY,
     PERCENTAGE,
     UnitOfEnergy,
 )
@@ -22,7 +21,7 @@ from homeassistant.helpers.typing import StateType
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import utcnow
-from .const import ATTRIBUTION, CONF_COORDINATOR, CONF_ENTITY_NAME, DOMAIN, ICON
+from .const import ATTRIBUTION, CONF_COORDINATOR, CONF_ENTITY_NAME, DOMAIN, ICON, DEFAULT_CURRENCY, CONF_CURRENCY
 from .coordinator import EntsoeCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -102,7 +101,7 @@ async def async_setup_entry(
 
     entities = []
     entity = {}
-    for description in sensor_descriptions(currency = config_entry.options[CONF_CURRENCY]):
+    for description in sensor_descriptions(currency = config_entry.options.get(CONF_CURRENCY, DEFAULT_CURRENCY)):
         entity = description
         entities.append(
             EntsoeSensor(
@@ -178,12 +177,12 @@ class EntsoeSensor(CoordinatorEntity, RestoreSensor):
     async def async_added_to_hass(self):
         """Handle entity which will be added."""
         await super().async_added_to_hass()
-        if (last_sensor_data := await self.async_get_last_sensor_data()) is not None:
-            # new introduced in 2022.04
-            if last_sensor_data.native_value is not None:
-                self._attr_native_value = last_sensor_data.native_value
-            if last_sensor_data._attr_extra_state_attributes is not None:
-                self._attr_extra_state_attributes = dict(last_sensor_data._attr_extra_state_attributes)
+        # if (last_sensor_data := await self.async_get_last_sensor_data()) is not None:
+        #     # new introduced in 2022.04
+        #     if last_sensor_data.native_value is not None:
+        #         self._attr_native_value = last_sensor_data.native_value
+        #     if last_sensor_data._attr_extra_state_attributes is not None:
+        #         self._attr_extra_state_attributes = dict(last_sensor_data._attr_extra_state_attributes)
 
     async def async_update(self) -> None:
         """Get the latest data and updates the states."""
@@ -198,6 +197,7 @@ class EntsoeSensor(CoordinatorEntity, RestoreSensor):
                     value = value.to_pydatetime()
 
                 self._attr_native_value = value
+                _LOGGER.debug(f"updated '{self.entity_id}' to value: {value}")
             except Exception as exc:
                 # No data available
                 _LOGGER.warning(f"Unable to update entity '{self.entity_id}' due to data processing error: {value} and error: {exc} , data: {self.coordinator.data}")

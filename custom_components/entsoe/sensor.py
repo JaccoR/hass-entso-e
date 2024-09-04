@@ -7,8 +7,6 @@ from datetime import timedelta
 import logging
 from typing import Any
 
-import pandas as pd
-
 from homeassistant.components.sensor import DOMAIN, RestoreSensor, SensorDeviceClass, SensorEntityDescription, SensorExtraStoredData, SensorStateClass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
@@ -21,6 +19,7 @@ from homeassistant.helpers.typing import StateType
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import utcnow
+
 from .const import ATTRIBUTION, CONF_COORDINATOR, CONF_ENTITY_NAME, DOMAIN, ICON, DEFAULT_CURRENCY, CONF_CURRENCY
 from .coordinator import EntsoeCoordinator
 
@@ -41,35 +40,35 @@ def sensor_descriptions(currency: str) -> tuple[EntsoeEntityDescription, ...]:
             name="Current electricity market price",
             native_unit_of_measurement=f"{currency}/{UnitOfEnergy.KILO_WATT_HOUR}",
             state_class=SensorStateClass.MEASUREMENT,
-            value_fn=lambda data: data["current_price"]
+            value_fn=lambda coordinator: coordinator.get_current_hourprice()
         ),
         EntsoeEntityDescription(
             key="next_hour_price",
             name="Next hour electricity market price",
             native_unit_of_measurement=f"{currency}/{UnitOfEnergy.KILO_WATT_HOUR}",
             state_class=SensorStateClass.MEASUREMENT,
-            value_fn=lambda data: data["next_hour_price"],
+            value_fn=lambda coordinator: coordinator.get_next_hourprice()
         ),
         EntsoeEntityDescription(
             key="min_price",
             name="Lowest energy price today",
             native_unit_of_measurement=f"{currency}/{UnitOfEnergy.KILO_WATT_HOUR}",
             state_class=SensorStateClass.MEASUREMENT,
-            value_fn=lambda data: data["min_price"],
+            value_fn=lambda coordinator: coordinator.get_min_price()
         ),
         EntsoeEntityDescription(
             key="max_price",
             name="Highest energy price today",
             native_unit_of_measurement=f"{currency}/{UnitOfEnergy.KILO_WATT_HOUR}",
             state_class=SensorStateClass.MEASUREMENT,
-            value_fn=lambda data: data["max_price"],
+            value_fn=lambda coordinator: coordinator.get_max_price()
         ),
         EntsoeEntityDescription(
             key="avg_price",
             name="Average electricity price today",
             native_unit_of_measurement=f"{currency}/{UnitOfEnergy.KILO_WATT_HOUR}",
             state_class=SensorStateClass.MEASUREMENT,
-            value_fn=lambda data: data["avg_price"],
+            value_fn=lambda coordinator: coordinator.get_avg_price()
         ),
         EntsoeEntityDescription(
             key="percentage_of_max",
@@ -77,21 +76,19 @@ def sensor_descriptions(currency: str) -> tuple[EntsoeEntityDescription, ...]:
             native_unit_of_measurement=f"{PERCENTAGE}",
             icon="mdi:percent",
             state_class=SensorStateClass.MEASUREMENT,
-            value_fn=lambda data: round(
-                data["current_price"] / data["max_price"] * 100, 1
-            ),
+            value_fn=lambda coordinator: coordinator.get_percentage_of_max(),
         ),
         EntsoeEntityDescription(
             key="highest_price_time_today",
             name="Time of highest price today",
             device_class=SensorDeviceClass.TIMESTAMP,
-            value_fn=lambda data: data["time_max"],
+            value_fn=lambda coordinator: coordinator.get_max_time()
         ),
         EntsoeEntityDescription(
             key="lowest_price_time_today",
             name="Time of lowest price today",
             device_class=SensorDeviceClass.TIMESTAMP,
-            value_fn=lambda data: data["time_min"],
+            value_fn=lambda coordinator: coordinator.get_min_time()
         ),
     )
 
@@ -150,32 +147,6 @@ class EntsoeSensor(CoordinatorEntity, RestoreSensor):
     async def async_update(self) -> None:
         """Get the latest data and updates the states."""
         #_LOGGER.debug(f"update function for '{self.entity_id} called.'")
-        value: Any = None
-        if self.coordinator.data is not None:
-            try:
-                processed = self.coordinator.processed_data()
-                #_LOGGER.debug(f"current coordinator.data value: {self.coordinator.data}")
-                value = self.entity_description.value_fn(processed)
-                #Check if value if a panda timestamp and if so convert to an HA compatible format
-                if isinstance(value, pd._libs.tslibs.timestamps.Timestamp):
-                    value = value.to_pydatetime()
-
-                self._attr_native_value = value
-
-                if self.description.key == "avg_price" and self._attr_native_value is not None:
-                    self._attr_extra_state_attributes = {
-                                "prices_today": processed["prices_today"],
-                                "prices_tomorrow": processed["prices_tomorrow"],
-                                "prices": processed["prices"]
-                            }
-                    
-                self.last_update_success = True
-                _LOGGER.debug(f"updated '{self.entity_id}' to value: {value}")
-                
-            except Exception as exc:
-                # No data available
-                self.last_update_success = False
-                _LOGGER.warning(f"Unable to update entity '{self.entity_id}' due to data processing error: {value} and error: {exc} , data: {self.coordinator.data}")
 
         # Cancel the currently scheduled event if there is any
         if self._unsub_update:
@@ -188,6 +159,34 @@ class EntsoeSensor(CoordinatorEntity, RestoreSensor):
             self._update_job,
             utcnow().replace(minute=0, second=0) + timedelta(hours=1),
         )
+
+        if self.coordinator.data is not None and self.coordinator.today_data_available():
+            value: Any = None
+            try:
+                #_LOGGER.debug(f"current coordinator.data value: {self.coordinator.data}")
+                value = self.entity_description.value_fn(self.coordinator)
+
+                self._attr_native_value = value
+                self.last_update_success = True
+                _LOGGER.debug(f"updated '{self.entity_id}' to value: {value}")
+                
+            except Exception as exc:
+                # No data available
+                self.last_update_success = False
+                _LOGGER.warning(f"Unable to update entity '{self.entity_id}', value: {value} and error: {exc}, data: {self.coordinator.data}")
+        else:
+            _LOGGER.warning(f"Unable to update entity '{self.entity_id}': No valid data for today available.")
+            self.last_update_success = False
+
+        try:
+            if self.description.key == "avg_price" and self._attr_native_value is not None and self.coordinator.data is not None:
+                self._attr_extra_state_attributes = {
+                        "prices_today": self.coordinator.get_prices_today(),
+                        "prices_tomorrow": self.coordinator.get_prices_tomorrow(),
+                        "prices": self.coordinator.get_prices()
+                    }
+        except Exception as exc:
+            _LOGGER.warning(f"Unable to update attributes of the average entity, error: {exc}, data: {self.coordinator.data}")
 
     @property
     def available(self) -> bool:

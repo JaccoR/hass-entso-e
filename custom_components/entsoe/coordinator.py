@@ -147,14 +147,11 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         return self.get_data_today().count() == 24
 
     def _filter_calculated_hourprices(self, data) -> list:
-        time_zone = dt.now().tzinfo
         hourprices = data.to_dict()
         if self.calculation_mode == CALCULATION_MODE["rotation"]:
-            now = pd.Timestamp.now(tz=str(time_zone)).normalize()
-            return { hour: price for hour, price in hourprices.items() if pd.to_datetime(hour) >= now and pd.to_datetime(hour) < now + timedelta(days=1) }
+            return { hour: price for hour, price in hourprices.items() if pd.to_datetime(hour) >= self.today and pd.to_datetime(hour) < self.today + timedelta(days=1) }
         elif self.calculation_mode == CALCULATION_MODE["sliding"]:
-            now = pd.Timestamp.now(tz=str(time_zone)).normalize()
-            return { hour: price for hour, price in hourprices.items() if pd.to_datetime(hour) >= now }
+            return { hour: price for hour, price in hourprices.items() if pd.to_datetime(hour) >= self.today }
         elif self.calculation_mode == CALCULATION_MODE["publish"]:
             return hourprices
     

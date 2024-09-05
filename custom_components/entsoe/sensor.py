@@ -15,12 +15,13 @@ from homeassistant.const import (
 )
 from homeassistant.core import HassJob, HomeAssistant
 from homeassistant.helpers import event
+from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.typing import StateType
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import utcnow
 
-from .const import ATTRIBUTION, CONF_COORDINATOR, CONF_ENTITY_NAME, DOMAIN, ICON, DEFAULT_CURRENCY, CONF_CURRENCY
+from .const import ATTRIBUTION, CONF_COORDINATOR, CONF_ENTITY_NAME, DOMAIN, DEFAULT_CURRENCY, CONF_CURRENCY
 from .coordinator import EntsoeCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -40,6 +41,7 @@ def sensor_descriptions(currency: str) -> tuple[EntsoeEntityDescription, ...]:
             name="Current electricity market price",
             native_unit_of_measurement=f"{currency}/{UnitOfEnergy.KILO_WATT_HOUR}",
             state_class=SensorStateClass.MEASUREMENT,
+            icon="mdi:currency-eur",
             value_fn=lambda coordinator: coordinator.get_current_hourprice()
         ),
         EntsoeEntityDescription(
@@ -47,32 +49,36 @@ def sensor_descriptions(currency: str) -> tuple[EntsoeEntityDescription, ...]:
             name="Next hour electricity market price",
             native_unit_of_measurement=f"{currency}/{UnitOfEnergy.KILO_WATT_HOUR}",
             state_class=SensorStateClass.MEASUREMENT,
+            icon="mdi:currency-eur",
             value_fn=lambda coordinator: coordinator.get_next_hourprice()
         ),
         EntsoeEntityDescription(
             key="min_price",
-            name="Lowest energy price today",
+            name="Lowest energy price",
             native_unit_of_measurement=f"{currency}/{UnitOfEnergy.KILO_WATT_HOUR}",
             state_class=SensorStateClass.MEASUREMENT,
+            icon="mdi:currency-eur",
             value_fn=lambda coordinator: coordinator.get_min_price()
         ),
         EntsoeEntityDescription(
             key="max_price",
-            name="Highest energy price today",
+            name="Highest energy price",
             native_unit_of_measurement=f"{currency}/{UnitOfEnergy.KILO_WATT_HOUR}",
             state_class=SensorStateClass.MEASUREMENT,
+            icon="mdi:currency-eur",
             value_fn=lambda coordinator: coordinator.get_max_price()
         ),
         EntsoeEntityDescription(
             key="avg_price",
-            name="Average electricity price today",
+            name="Average electricity price",
             native_unit_of_measurement=f"{currency}/{UnitOfEnergy.KILO_WATT_HOUR}",
             state_class=SensorStateClass.MEASUREMENT,
+            icon="mdi:currency-eur",
             value_fn=lambda coordinator: coordinator.get_avg_price()
         ),
         EntsoeEntityDescription(
             key="percentage_of_max",
-            name="Current percentage of highest electricity price today",
+            name="Current percentage of highest electricity price",
             native_unit_of_measurement=f"{PERCENTAGE}",
             icon="mdi:percent",
             state_class=SensorStateClass.MEASUREMENT,
@@ -80,14 +86,16 @@ def sensor_descriptions(currency: str) -> tuple[EntsoeEntityDescription, ...]:
         ),
         EntsoeEntityDescription(
             key="highest_price_time_today",
-            name="Time of highest price today",
+            name="Time of highest price",
             device_class=SensorDeviceClass.TIMESTAMP,
+            icon="mdi:clock",
             value_fn=lambda coordinator: coordinator.get_max_time()
         ),
         EntsoeEntityDescription(
             key="lowest_price_time_today",
-            name="Time of lowest price today",
+            name="Time of lowest price",
             device_class=SensorDeviceClass.TIMESTAMP,
+            icon="mdi:clock",
             value_fn=lambda coordinator: coordinator.get_min_time()
         ),
     )
@@ -119,7 +127,7 @@ class EntsoeSensor(CoordinatorEntity, RestoreSensor):
     """Representation of a ENTSO-e sensor."""
 
     _attr_attribution = ATTRIBUTION
-    _attr_icon = ICON
+    
 
     def __init__(self, coordinator: EntsoeCoordinator, description: EntsoeEntityDescription, name: str = "") -> None:
         """Initialize the sensor."""
@@ -138,6 +146,20 @@ class EntsoeSensor(CoordinatorEntity, RestoreSensor):
             self._attr_name = f"{description.name}"
 
         self.entity_description: EntsoeEntityDescription = description
+        self._attr_icon = description.icon
+
+        self._attr_device_info = DeviceInfo(
+            entry_type=DeviceEntryType.SERVICE,
+            identifiers={
+                (
+                    DOMAIN,
+                    f"{coordinator.config_entry.entry_id}_entsoe",
+                )
+            },
+            manufacturer="entso-e",
+            model="",
+            name="entsoe",
+        )
 
         self._update_job = HassJob(self.async_schedule_update_ha_state)
         self._unsub_update = None

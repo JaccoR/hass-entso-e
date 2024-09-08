@@ -42,6 +42,7 @@ def sensor_descriptions(currency: str) -> tuple[EntsoeEntityDescription, ...]:
             native_unit_of_measurement=f"{currency}/{UnitOfEnergy.KILO_WATT_HOUR}",
             state_class=SensorStateClass.MEASUREMENT,
             icon="mdi:currency-eur",
+            suggested_display_precision=3,
             value_fn=lambda coordinator: coordinator.get_current_hourprice()
         ),
         EntsoeEntityDescription(
@@ -50,6 +51,7 @@ def sensor_descriptions(currency: str) -> tuple[EntsoeEntityDescription, ...]:
             native_unit_of_measurement=f"{currency}/{UnitOfEnergy.KILO_WATT_HOUR}",
             state_class=SensorStateClass.MEASUREMENT,
             icon="mdi:currency-eur",
+            suggested_display_precision=3,
             value_fn=lambda coordinator: coordinator.get_next_hourprice()
         ),
         EntsoeEntityDescription(
@@ -58,6 +60,7 @@ def sensor_descriptions(currency: str) -> tuple[EntsoeEntityDescription, ...]:
             native_unit_of_measurement=f"{currency}/{UnitOfEnergy.KILO_WATT_HOUR}",
             state_class=SensorStateClass.MEASUREMENT,
             icon="mdi:currency-eur",
+            suggested_display_precision=3,
             value_fn=lambda coordinator: coordinator.get_min_price()
         ),
         EntsoeEntityDescription(
@@ -66,6 +69,7 @@ def sensor_descriptions(currency: str) -> tuple[EntsoeEntityDescription, ...]:
             native_unit_of_measurement=f"{currency}/{UnitOfEnergy.KILO_WATT_HOUR}",
             state_class=SensorStateClass.MEASUREMENT,
             icon="mdi:currency-eur",
+            suggested_display_precision=3,
             value_fn=lambda coordinator: coordinator.get_max_price()
         ),
         EntsoeEntityDescription(
@@ -74,6 +78,7 @@ def sensor_descriptions(currency: str) -> tuple[EntsoeEntityDescription, ...]:
             native_unit_of_measurement=f"{currency}/{UnitOfEnergy.KILO_WATT_HOUR}",
             state_class=SensorStateClass.MEASUREMENT,
             icon="mdi:currency-eur",
+            suggested_display_precision=3,
             value_fn=lambda coordinator: coordinator.get_avg_price()
         ),
         EntsoeEntityDescription(
@@ -81,6 +86,7 @@ def sensor_descriptions(currency: str) -> tuple[EntsoeEntityDescription, ...]:
             name="Current percentage of highest electricity price",
             native_unit_of_measurement=f"{PERCENTAGE}",
             icon="mdi:percent",
+            suggested_display_precision=1,
             state_class=SensorStateClass.MEASUREMENT,
             value_fn=lambda coordinator: coordinator.get_percentage_of_max(),
         ),
@@ -147,6 +153,7 @@ class EntsoeSensor(CoordinatorEntity, RestoreSensor):
 
         self.entity_description: EntsoeEntityDescription = description
         self._attr_icon = description.icon
+        self._attr_suggested_display_precision= description.suggested_display_precision if description.suggested_display_precision is not None else 2
 
         self._attr_device_info = DeviceInfo(
             entry_type=DeviceEntryType.SERVICE,
@@ -158,7 +165,7 @@ class EntsoeSensor(CoordinatorEntity, RestoreSensor):
             },
             manufacturer="entso-e",
             model="",
-            name="entsoe",
+            name="entso-e" + ((" (" + name + ")") if name != "" else "")
         )
 
         self._update_job = HassJob(self.async_schedule_update_ha_state)

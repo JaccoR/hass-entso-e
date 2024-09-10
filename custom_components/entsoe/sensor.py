@@ -21,7 +21,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import utcnow
 
-from .const import ATTRIBUTION, CONF_COORDINATOR, CONF_ENTITY_NAME, DOMAIN, DEFAULT_CURRENCY, CONF_CURRENCY
+from .const import ATTRIBUTION, CONF_ENTITY_NAME, DOMAIN, DEFAULT_CURRENCY, CONF_CURRENCY
 from .coordinator import EntsoeCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -113,7 +113,7 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up ENTSO-e price sensor entries."""
-    entsoe_coordinator = hass.data[DOMAIN][config_entry.entry_id][CONF_COORDINATOR]
+    entsoe_coordinator = hass.data[DOMAIN][config_entry.entry_id]
 
     entities = []
     entity = {}

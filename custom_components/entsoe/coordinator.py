@@ -97,7 +97,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         self.logger.debug(f"received data = {data}")
         
         if data is not None:
-            parsed_data = self.parse_hourprices(dict(list(data.items())[-48:]))
+            parsed_data = self.parse_hourprices(data)
             self.logger.debug(f"received pricing data from entso-e for {len(data)} hours")
             self.filtered_hourprices = self._filter_calculated_hourprices(parsed_data)
             return parsed_data
@@ -137,19 +137,25 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         return client.query_day_ahead_prices(
             country_code=self.area, start=start_date, end=end_date
         )
+    
+    async def get_energy_prices(self, start_date, end_date):
+        #check if we have the data already
+        if len(self.get_data(start_date)) == 24 and len(self.get_data(end_date)) == 24:
+            self.logger.debug(f'return prices from coordinator cache.')
+            return {k: v for k, v in self.data.items() if k.date() >= start_date.date() and k.date() <= end_date.date()}
+        return await self.fetch_prices(start_date, end_date)
 
     def today_data_available(self):
         return len(self.get_data_today()) == 24
 
     def _filter_calculated_hourprices(self, data):
-        hourprices = data
         if self.calculation_mode == CALCULATION_MODE["rotation"]:
-            return { hour: price for hour, price in hourprices.items() if hour >= self.today and hour < self.today + timedelta(days=1) }
+            return { hour: price for hour, price in data.items() if hour >= self.today and hour < self.today + timedelta(days=1) }
         elif self.calculation_mode == CALCULATION_MODE["sliding"]:
             now = dt.now().replace(minute=0, second=0, microsecond=0)
-            return { hour: price for hour, price in hourprices.items() if hour >= now }
+            return { hour: price for hour, price in data.items() if hour >= now }
         elif self.calculation_mode == CALCULATION_MODE["publish"]:
-            return hourprices
+            return dict(list(data.items())[-48:])
     
     def get_prices_today(self):
         return self.get_timestamped_prices(self.get_data_today())
@@ -158,8 +164,11 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         return self.get_timestamped_prices(self.get_data_tomorrow())
     
     def get_prices(self):
-        return self.get_timestamped_prices(self.data)
+        return self.get_timestamped_prices(dict(list(self.data.items())[-48:]))
     
+    def get_data(self, date):
+        return {k: v for k, v in self.data.items() if k.date() == date.date()}
+
     def get_data_today(self):
         return {k: v for k, v in self.data.items() if k.date() == self.today.date()}
     

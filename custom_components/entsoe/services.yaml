@@ -1,0 +1,17 @@
+get_energy_prices:
+  fields:
+    config_entry:
+      required: true
+      selector:
+        config_entry:
+          integration: entsoe
+    start:
+      required: false
+      example: "2023-01-01 00:00:00"
+      selector:
+        datetime:
+    end:
+      required: false
+      example: "2023-01-01 00:00:00"
+      selector:
+        datetime:

@@ -22,7 +22,6 @@ from homeassistant.helpers.template import Template
 from .const import (
     AREA_INFO,
     CALCULATION_MODE,
-    COMPONENT_TITLE,
     CONF_ADVANCED_OPTIONS,
     CONF_API_KEY,
     CONF_AREA,

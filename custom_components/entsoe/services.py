@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import date, datetime
 from functools import partial
 from typing import Final
 
 import voluptuous as vol
-import logging
-
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.core import (
     HomeAssistant,
@@ -63,20 +62,15 @@ def __get_date(date_input: str | None) -> date | datetime:
 
 def __serialize_prices(prices) -> ServiceResponse:
     """Serialize prices."""
-    return  {
+    return {
         "prices": [
-            {
-                "timestamp": dt.isoformat(),
-                "price": price
-            }
+            {"timestamp": dt.isoformat(), "price": price}
             for dt, price in prices.items()
         ]
     }
 
 
-def __get_coordinator(
-    hass: HomeAssistant, call: ServiceCall
-) -> EntsoeCoordinator:
+def __get_coordinator(hass: HomeAssistant, call: ServiceCall) -> EntsoeCoordinator:
     """Get the coordinator from the entry."""
     entry_id: str = call.data[ATTR_CONFIG_ENTRY]
     entry: ConfigEntry | None = hass.config_entries.async_get_entry(entry_id)

@@ -1,41 +1,40 @@
 """Config flow for Forecast.Solar integration."""
+
 from __future__ import annotations
 
-from typing import Any
+import logging
 import re
+from typing import Any
 
 import voluptuous as vol
-
-import logging
-
 from homeassistant.config_entries import ConfigEntry, ConfigFlow, OptionsFlow
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers.selector import (
-    SelectSelectorConfig,
-    SelectSelector,
     SelectOptionDict,
-    TemplateSelectorConfig,
+    SelectSelector,
+    SelectSelectorConfig,
     TemplateSelector,
+    TemplateSelectorConfig,
 )
 from homeassistant.helpers.template import Template
 
 from .const import (
-    CONF_MODIFYER,
-    CONF_CURRENCY,
-    CONF_API_KEY,
-    CONF_ENTITY_NAME,
-    CONF_AREA,
-    CONF_ADVANCED_OPTIONS,
-    CONF_VAT_VALUE,
-    CONF_CALCULATION_MODE,
-    DOMAIN,
-    COMPONENT_TITLE,
-    UNIQUE_ID,
     AREA_INFO,
-    DEFAULT_MODIFYER,
+    CALCULATION_MODE,
+    COMPONENT_TITLE,
+    CONF_ADVANCED_OPTIONS,
+    CONF_API_KEY,
+    CONF_AREA,
+    CONF_CALCULATION_MODE,
+    CONF_CURRENCY,
+    CONF_ENTITY_NAME,
+    CONF_MODIFYER,
+    CONF_VAT_VALUE,
     DEFAULT_CURRENCY,
-    CALCULATION_MODE
+    DEFAULT_MODIFYER,
+    DOMAIN,
+    UNIQUE_ID,
 )
 
 
@@ -102,7 +101,7 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
                         CONF_ADVANCED_OPTIONS: user_input[CONF_ADVANCED_OPTIONS],
                         CONF_VAT_VALUE: user_input[CONF_VAT_VALUE],
                         CONF_ENTITY_NAME: user_input[CONF_ENTITY_NAME],
-                        CONF_CALCULATION_MODE: user_input[CONF_CALCULATION_MODE]
+                        CONF_CALCULATION_MODE: user_input[CONF_CALCULATION_MODE],
                     },
                 )
 
@@ -111,7 +110,9 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
             errors=errors,
             data_schema=vol.Schema(
                 {
-                    vol.Optional(CONF_ENTITY_NAME, default=""): vol.All(vol.Coerce(str)),
+                    vol.Optional(CONF_ENTITY_NAME, default=""): vol.All(
+                        vol.Coerce(str)
+                    ),
                     vol.Required(CONF_API_KEY): vol.All(vol.Coerce(str)),
                     vol.Required(CONF_AREA): SelectSelector(
                         SelectSelectorConfig(
@@ -137,7 +138,6 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
             user_input[CONF_AREA] = self.area
             user_input[CONF_API_KEY] = self.api_key
             user_input[CONF_ENTITY_NAME] = self.name
-
 
             if user_input[CONF_ENTITY_NAME] not in (None, ""):
                 self.name = user_input[CONF_ENTITY_NAME]
@@ -176,13 +176,14 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
                                 CONF_CURRENCY: user_input[CONF_CURRENCY],
                                 CONF_VAT_VALUE: user_input[CONF_VAT_VALUE],
                                 CONF_ENTITY_NAME: user_input[CONF_ENTITY_NAME],
-                                CONF_CALCULATION_MODE: user_input[CONF_CALCULATION_MODE]
+                                CONF_CALCULATION_MODE: user_input[
+                                    CONF_CALCULATION_MODE
+                                ],
                             },
                         )
                     errors["base"] = "missing_current_price"
                 else:
                     errors["base"] = "invalid_template"
-
 
         return self.async_show_form(
             step_id="extra",
@@ -192,13 +193,20 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
                     vol.Optional(
                         CONF_VAT_VALUE, default=AREA_INFO[self.area]["VAT"]
                     ): vol.All(vol.Coerce(float, "must be a number")),
-                    vol.Optional(CONF_MODIFYER, default=""): TemplateSelector(TemplateSelectorConfig()),
-                    vol.Optional(CONF_CURRENCY, default=DEFAULT_CURRENCY): vol.All(vol.Coerce(str)),
-                    vol.Optional(CONF_CALCULATION_MODE, default=CALCULATION_MODE["default"]): SelectSelector(
+                    vol.Optional(CONF_MODIFYER, default=""): TemplateSelector(
+                        TemplateSelectorConfig()
+                    ),
+                    vol.Optional(CONF_CURRENCY, default=DEFAULT_CURRENCY): vol.All(
+                        vol.Coerce(str)
+                    ),
+                    vol.Optional(
+                        CONF_CALCULATION_MODE, default=CALCULATION_MODE["default"]
+                    ): SelectSelector(
                         SelectSelectorConfig(
                             options=[
                                 SelectOptionDict(value=value, label=key)
-                                for key, value in CALCULATION_MODE.items() if key != "default"
+                                for key, value in CALCULATION_MODE.items()
+                                if key != "default"
                             ]
                         ),
                     ),
@@ -221,6 +229,7 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
         except Exception as e:
             pass
         return False
+
 
 class EntsoeOptionFlowHandler(OptionsFlow):
     """Handle options."""
@@ -261,7 +270,9 @@ class EntsoeOptionFlowHandler(OptionsFlow):
             else:
                 errors["base"] = "invalid_template"
 
-        calculation_mode_default = self.config_entry.options.get(CONF_CALCULATION_MODE, CALCULATION_MODE["default"])
+        calculation_mode_default = self.config_entry.options.get(
+            CONF_CALCULATION_MODE, CALCULATION_MODE["default"]
+        )
 
         return self.async_show_form(
             step_id="init",
@@ -291,7 +302,9 @@ class EntsoeOptionFlowHandler(OptionsFlow):
                     ): TemplateSelector(TemplateSelectorConfig()),
                     vol.Optional(
                         CONF_CURRENCY,
-                        default=self.config_entry.options.get(CONF_CURRENCY, DEFAULT_CURRENCY)
+                        default=self.config_entry.options.get(
+                            CONF_CURRENCY, DEFAULT_CURRENCY
+                        ),
                     ): vol.All(vol.Coerce(str)),
                     vol.Optional(
                         CONF_CALCULATION_MODE,
@@ -300,7 +313,8 @@ class EntsoeOptionFlowHandler(OptionsFlow):
                         SelectSelectorConfig(
                             options=[
                                 SelectOptionDict(value=value, label=key)
-                                for key, value in CALCULATION_MODE.items() if key != "default"
+                                for key, value in CALCULATION_MODE.items()
+                                if key != "default"
                             ]
                         ),
                     ),

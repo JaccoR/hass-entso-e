@@ -30,7 +30,7 @@ Search for "ENTSO-e" when adding HACS integrations and add "ENTSO-e Transparency
 
 Or use this link to go directly there: [![Or use this link.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=JaccoR&repository=hass-entso-e&category=integration) 
 
-Restart Home Assistant and add the integration through your settings. 
+Restart Home Assistant and add the integration through Settings. 
 
 ### Manual
 Download this repository and place the contents of `custom_components` in your own `custom_components` map of your Home Assistant installation. Restart Home Assistant and add the integration through your settings. 
@@ -38,7 +38,16 @@ Download this repository and place the contents of `custom_components` in your o
 ------
 ## Configuration
 
-The sensors can be added using the web UI. In the web UI you can add your API-key and country and the sensors will automatically be added to your system. There is an optional field for a cost modifyer template and resulting currency.
+The sensors can be added using the integration page.
+
+#### Add integration
+
+1. Go to Settings => Devices and Services
+2. Click the button "+ Add integration". 
+2. Search for "entso
+3. Click on the Entso-e to start te configuration flow.
+
+ In the config flow you can add your API-key and country and the sensors will automatically be added to your system. There is an optional field for a cost modifyer template and resulting currency.
 
 ### Cost Modifyer Template
 

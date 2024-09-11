@@ -1,4 +1,5 @@
 """The ENTSO-e prices component."""
+
 from __future__ import annotations
 
 import logging
@@ -6,11 +7,31 @@ import logging
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
-from .const import CONF_COORDINATOR, CONF_VAT_VALUE, DOMAIN, CONF_API_KEY, CONF_AREA, CONF_MODIFYER, DEFAULT_MODIFYER, CALCULATION_MODE, CONF_CALCULATION_MODE
+from homeassistant.helpers.typing import ConfigType
+
+from .const import (
+    CALCULATION_MODE,
+    CONF_API_KEY,
+    CONF_AREA,
+    CONF_CALCULATION_MODE,
+    CONF_MODIFYER,
+    CONF_VAT_VALUE,
+    DEFAULT_MODIFYER,
+    DOMAIN,
+)
 from .coordinator import EntsoeCoordinator
+from .services import async_setup_services
 
 _LOGGER = logging.getLogger(__name__)
 PLATFORMS = [Platform.SENSOR]
+
+
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Set up ENTSO-e services."""
+
+    async_setup_services(hass)
+
+    return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -21,13 +42,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     area = entry.options[CONF_AREA]
     modifyer = entry.options.get(CONF_MODIFYER, DEFAULT_MODIFYER)
     vat = entry.options.get(CONF_VAT_VALUE, 0)
-    calculation_mode = entry.options.get(CONF_CALCULATION_MODE, CALCULATION_MODE["default"])
-    entsoe_coordinator = EntsoeCoordinator(hass, api_key=api_key, area = area, modifyer = modifyer, calculation_mode=calculation_mode, VAT=vat)
+    calculation_mode = entry.options.get(
+        CONF_CALCULATION_MODE, CALCULATION_MODE["default"]
+    )
+    entsoe_coordinator = EntsoeCoordinator(
+        hass,
+        api_key=api_key,
+        area=area,
+        modifyer=modifyer,
+        calculation_mode=calculation_mode,
+        VAT=vat,
+    )
 
-    hass.data.setdefault(DOMAIN, {})
-    hass.data[DOMAIN][entry.entry_id] = {
-        CONF_COORDINATOR: entsoe_coordinator,
-    }
+    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = entsoe_coordinator
 
     # Fetch initial data, so we have data when entities subscribe and set up the platform
     await entsoe_coordinator.async_config_entry_first_refresh()
@@ -39,10 +66,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
-    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
-    if unload_ok:
+    if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
         hass.data[DOMAIN].pop(entry.entry_id)
-
     return unload_ok
 
 

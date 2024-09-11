@@ -5,3 +5,11 @@ updates:
     schedule:
       interval: weekly
       time: "06:00"
+
+  - package-ecosystem: "pip"
+    directory: "/"
+    target-branch: "main"
+    labels:
+      - "dependency-update"
+    schedule:
+      interval: "monthly"

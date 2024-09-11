@@ -1,5 +1,7 @@
 {
   "name": "ENTSO-e Transparency Platform",
   "homeassistant": "2024.1.0",
-  "render_readme": true
+  "render_readme": true,
+  "zip_release": true,
+  "filename": "entsoe.zip"
 }

@@ -121,7 +121,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
             return True
         if len(self.get_data_today()) != 24:
             return True
-        if len(self.get_data_tomorrow()) != 24 and now.hour > 12:
+        if len(self.get_data_tomorrow()) != 24 and now.hour > 11:
             return True
         return False
 
@@ -167,7 +167,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
                 for k, v in self.data.items()
                 if k.date() >= start_date.date() and k.date() <= end_date.date()
             }
-        return await self.fetch_prices(start_date, end_date)
+        return self.parse_hourprices(await self.fetch_prices(start_date, end_date))
 
     def today_data_available(self):
         return len(self.get_data_today()) == 24

@@ -46,7 +46,7 @@ SERVICE_SCHEMA: Final = vol.Schema(
 def __get_date(date_input: str | None) -> date | datetime:
     """Get date."""
     if not date_input:
-        return dt_util.now().date()
+        return dt_util.now()
 
     if value := dt_util.parse_datetime(date_input):
         return value

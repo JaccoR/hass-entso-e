@@ -246,6 +246,9 @@ class EntsoeSensor(CoordinatorEntity, RestoreSensor):
                     "prices_tomorrow": self.coordinator.get_prices_tomorrow(),
                     "prices": self.coordinator.get_prices(),
                 }
+                _LOGGER.debug(
+                    f"attributes updated: {self._attr_extra_state_attributes}"
+                )
         except Exception as exc:
             _LOGGER.warning(
                 f"Unable to update attributes of the average entity, error: {exc}, data: {self.coordinator.data}"

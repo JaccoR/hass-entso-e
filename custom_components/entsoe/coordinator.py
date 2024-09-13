@@ -14,6 +14,9 @@ from requests.exceptions import HTTPError
 from .api_client import EntsoeClient
 from .const import AREA_INFO, CALCULATION_MODE, DEFAULT_MODIFYER
 
+# depending on timezone les than 24 hours could be returned.
+MIN_HOURS = 20
+
 
 class EntsoeCoordinator(DataUpdateCoordinator):
     """Get the latest data and update the states."""
@@ -119,9 +122,9 @@ class EntsoeCoordinator(DataUpdateCoordinator):
     def check_update_needed(self, now):
         if self.data is None:
             return True
-        if len(self.get_data_today()) != 24:
+        if len(self.get_data_today()) < MIN_HOURS:
             return True
-        if len(self.get_data_tomorrow()) != 24 and now.hour > 11:
+        if len(self.get_data_tomorrow()) < MIN_HOURS and now.hour > 11:
             return True
         return False
 
@@ -160,7 +163,10 @@ class EntsoeCoordinator(DataUpdateCoordinator):
 
     async def get_energy_prices(self, start_date, end_date):
         # check if we have the data already
-        if len(self.get_data(start_date)) == 24 and len(self.get_data(end_date)) == 24:
+        if (
+            len(self.get_data(start_date)) > MIN_HOURS
+            and len(self.get_data(end_date)) > MIN_HOURS
+        ):
             self.logger.debug(f"return prices from coordinator cache.")
             return {
                 k: v
@@ -175,7 +181,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
             self.logger.debug(f"new day detected: update today and filtered hourprices")
             self.today = now.replace(hour=0, minute=0, second=0, microsecond=0)
             self.filtered_hourprices = self._filter_calculated_hourprices(self.data)
-        return len(self.get_data_today()) == 24
+        return len(self.get_data_today()) > MIN_HOURS
 
     def _filter_calculated_hourprices(self, data):
         if self.calculation_mode == CALCULATION_MODE["rotation"]:

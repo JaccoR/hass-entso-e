@@ -3,7 +3,7 @@ from __future__ import annotations
 import enum
 import logging
 import xml.etree.ElementTree as ET
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict, Union
 
 import pytz
@@ -82,7 +82,7 @@ class EntsoeClient:
                         position = point.find("ns:position", ns).text
                         price = point.find("ns:price.amount", ns).text
                         hour = int(position) - 1
-                        series[date.replace(hour=hour)] = float(price)
+                        series[date + timedelta(hours=hour)] = float(price)
 
                 return series
             except Exception as exc:

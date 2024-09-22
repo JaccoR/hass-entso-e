@@ -70,6 +70,11 @@ class EntsoeClient:
                 # Extract TimeSeries data
                 for timeseries in root.findall("ns:TimeSeries", ns):
                     period = timeseries.find("ns:Period", ns)
+                    resolution = period.find("ns:resolution", ns).text
+
+                    if resolution != "PT60M":
+                        continue
+
                     start_time = period.find("ns:timeInterval/ns:start", ns).text
 
                     date = (

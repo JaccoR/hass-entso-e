@@ -13,10 +13,12 @@ from .const import (
     CALCULATION_MODE,
     CONF_API_KEY,
     CONF_AREA,
+    CONF_ENERGY_SCALE,
     CONF_CALCULATION_MODE,
     CONF_MODIFYER,
     CONF_VAT_VALUE,
     DEFAULT_MODIFYER,
+    DEFAULT_ENERGY_SCALE,
     DOMAIN,
 )
 from .coordinator import EntsoeCoordinator
@@ -40,6 +42,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Initialise the coordinator and save it as domain-data
     api_key = entry.options[CONF_API_KEY]
     area = entry.options[CONF_AREA]
+    energy_scale = entry.options.get(CONF_ENERGY_SCALE, DEFAULT_ENERGY_SCALE)
     modifyer = entry.options.get(CONF_MODIFYER, DEFAULT_MODIFYER)
     vat = entry.options.get(CONF_VAT_VALUE, 0)
     calculation_mode = entry.options.get(
@@ -49,6 +52,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass,
         api_key=api_key,
         area=area,
+        energy_scale=energy_scale,
         modifyer=modifyer,
         calculation_mode=calculation_mode,
         VAT=vat,

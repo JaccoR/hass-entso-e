@@ -16,7 +16,7 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import PERCENTAGE, UnitOfEnergy
+from homeassistant.const import PERCENTAGE
 from homeassistant.core import HassJob, HomeAssistant
 from homeassistant.helpers import event
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
@@ -28,8 +28,10 @@ from homeassistant.util import utcnow
 from .const import (
     ATTRIBUTION,
     CONF_CURRENCY,
+    CONF_ENERGY_SCALE,
     CONF_ENTITY_NAME,
     DEFAULT_CURRENCY,
+    DEFAULT_ENERGY_SCALE,
     DOMAIN,
 )
 from .coordinator import EntsoeCoordinator
@@ -44,13 +46,13 @@ class EntsoeEntityDescription(SensorEntityDescription):
     value_fn: Callable[[dict], StateType] = None
 
 
-def sensor_descriptions(currency: str) -> tuple[EntsoeEntityDescription, ...]:
+def sensor_descriptions(currency: str, energy_scale: str) -> tuple[EntsoeEntityDescription, ...]:
     """Construct EntsoeEntityDescription."""
     return (
         EntsoeEntityDescription(
             key="current_price",
             name="Current electricity market price",
-            native_unit_of_measurement=f"{currency}/{UnitOfEnergy.KILO_WATT_HOUR}",
+            native_unit_of_measurement=f"{currency}/{energy_scale}",
             state_class=SensorStateClass.MEASUREMENT,
             icon="mdi:currency-eur",
             suggested_display_precision=3,
@@ -59,7 +61,7 @@ def sensor_descriptions(currency: str) -> tuple[EntsoeEntityDescription, ...]:
         EntsoeEntityDescription(
             key="next_hour_price",
             name="Next hour electricity market price",
-            native_unit_of_measurement=f"{currency}/{UnitOfEnergy.KILO_WATT_HOUR}",
+            native_unit_of_measurement=f"{currency}/{energy_scale}",
             state_class=SensorStateClass.MEASUREMENT,
             icon="mdi:currency-eur",
             suggested_display_precision=3,
@@ -68,7 +70,7 @@ def sensor_descriptions(currency: str) -> tuple[EntsoeEntityDescription, ...]:
         EntsoeEntityDescription(
             key="min_price",
             name="Lowest energy price",
-            native_unit_of_measurement=f"{currency}/{UnitOfEnergy.KILO_WATT_HOUR}",
+            native_unit_of_measurement=f"{currency}/{energy_scale}",
             state_class=SensorStateClass.MEASUREMENT,
             icon="mdi:currency-eur",
             suggested_display_precision=3,
@@ -77,7 +79,7 @@ def sensor_descriptions(currency: str) -> tuple[EntsoeEntityDescription, ...]:
         EntsoeEntityDescription(
             key="max_price",
             name="Highest energy price",
-            native_unit_of_measurement=f"{currency}/{UnitOfEnergy.KILO_WATT_HOUR}",
+            native_unit_of_measurement=f"{currency}/{energy_scale}",
             state_class=SensorStateClass.MEASUREMENT,
             icon="mdi:currency-eur",
             suggested_display_precision=3,
@@ -86,7 +88,7 @@ def sensor_descriptions(currency: str) -> tuple[EntsoeEntityDescription, ...]:
         EntsoeEntityDescription(
             key="avg_price",
             name="Average electricity price",
-            native_unit_of_measurement=f"{currency}/{UnitOfEnergy.KILO_WATT_HOUR}",
+            native_unit_of_measurement=f"{currency}/{energy_scale}",
             state_class=SensorStateClass.MEASUREMENT,
             icon="mdi:currency-eur",
             suggested_display_precision=3,
@@ -129,7 +131,8 @@ async def async_setup_entry(
     entities = []
     entity = {}
     for description in sensor_descriptions(
-        currency=config_entry.options.get(CONF_CURRENCY, DEFAULT_CURRENCY)
+        currency=config_entry.options.get(CONF_CURRENCY, DEFAULT_CURRENCY),
+        energy_scale=config_entry.options.get(CONF_ENERGY_SCALE, DEFAULT_ENERGY_SCALE)
     ):
         entity = description
         entities.append(

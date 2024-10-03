@@ -21,16 +21,19 @@ from homeassistant.helpers.template import Template
 
 from .const import (
     AREA_INFO,
+    ENERGY_SCALES,
     CALCULATION_MODE,
     CONF_ADVANCED_OPTIONS,
     CONF_API_KEY,
     CONF_AREA,
     CONF_CALCULATION_MODE,
     CONF_CURRENCY,
+    CONF_ENERGY_SCALE,
     CONF_ENTITY_NAME,
     CONF_MODIFYER,
     CONF_VAT_VALUE,
     DEFAULT_CURRENCY,
+    DEFAULT_ENERGY_SCALE,
     DEFAULT_MODIFYER,
     DOMAIN,
     UNIQUE_ID,
@@ -47,6 +50,7 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
         self.api_key = None
         self.modifyer = None
         self.currency = None
+        self.energy_scale = None
         self.name = ""
 
     VERSION = 1
@@ -87,6 +91,7 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
             user_input[CONF_VAT_VALUE] = 0
             user_input[CONF_MODIFYER] = DEFAULT_MODIFYER
             user_input[CONF_CURRENCY] = DEFAULT_CURRENCY
+            user_input[CONF_ENERGY_SCALE] = DEFAULT_ENERGY_SCALE
             user_input[CONF_CALCULATION_MODE] = CALCULATION_MODE["default"]
             if not already_configured:
                 return self.async_create_entry(
@@ -97,6 +102,7 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
                         CONF_AREA: user_input[CONF_AREA],
                         CONF_MODIFYER: user_input[CONF_MODIFYER],
                         CONF_CURRENCY: user_input[CONF_CURRENCY],
+                        CONF_ENERGY_SCALE: user_input[CONF_ENERGY_SCALE],
                         CONF_ADVANCED_OPTIONS: user_input[CONF_ADVANCED_OPTIONS],
                         CONF_VAT_VALUE: user_input[CONF_VAT_VALUE],
                         CONF_ENTITY_NAME: user_input[CONF_ENTITY_NAME],
@@ -160,6 +166,9 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
             if user_input[CONF_CURRENCY] in (None, ""):
                 user_input[CONF_CURRENCY] = DEFAULT_CURRENCY
 
+            if user_input[CONF_ENERGY_SCALE] in (None, ""):
+                user_input[CONF_ENERGY_SCALE] = DEFAULT_ENERGY_SCALE
+
             template_ok = await self._valid_template(user_input[CONF_MODIFYER])
 
             if not already_configured:
@@ -173,6 +182,7 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
                                 CONF_AREA: user_input[CONF_AREA],
                                 CONF_MODIFYER: user_input[CONF_MODIFYER],
                                 CONF_CURRENCY: user_input[CONF_CURRENCY],
+                                CONF_ENERGY_SCALE: user_input[CONF_ENERGY_SCALE],
                                 CONF_VAT_VALUE: user_input[CONF_VAT_VALUE],
                                 CONF_ENTITY_NAME: user_input[CONF_ENTITY_NAME],
                                 CONF_CALCULATION_MODE: user_input[
@@ -197,6 +207,9 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
                     ),
                     vol.Optional(CONF_CURRENCY, default=DEFAULT_CURRENCY): vol.All(
                         vol.Coerce(str)
+                    ),
+                    vol.Optional(CONF_ENERGY_SCALE, default=DEFAULT_ENERGY_SCALE): vol.In(
+                        list(ENERGY_SCALES.keys())
                     ),
                     vol.Optional(
                         CONF_CALCULATION_MODE, default=CALCULATION_MODE["default"]
@@ -260,6 +273,9 @@ class EntsoeOptionFlowHandler(OptionsFlow):
             if user_input[CONF_CURRENCY] in (None, ""):
                 user_input[CONF_CURRENCY] = DEFAULT_CURRENCY
 
+            if user_input[CONF_ENERGY_SCALE] in (None, ""):
+                user_input[CONF_ENERGY_SCALE] = DEFAULT_ENERGY_SCALE
+
             template_ok = await self._valid_template(user_input[CONF_MODIFYER])
 
             if template_ok:
@@ -305,6 +321,12 @@ class EntsoeOptionFlowHandler(OptionsFlow):
                             CONF_CURRENCY, DEFAULT_CURRENCY
                         ),
                     ): vol.All(vol.Coerce(str)),
+                    vol.Optional(
+                        CONF_ENERGY_SCALE,
+                        default=self.config_entry.options.get(
+                            CONF_ENERGY_SCALE, DEFAULT_ENERGY_SCALE
+                        ),
+                    ): vol.In(list(ENERGY_SCALES.keys())),
                     vol.Optional(
                         CONF_CALCULATION_MODE,
                         default=calculation_mode_default,

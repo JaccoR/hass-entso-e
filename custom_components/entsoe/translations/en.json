@@ -9,6 +9,7 @@
           "advanced_options": "I want to set VAT, template and calculation method (next step)",
           "modifyer": "Price Modifyer Template (Optional)",
           "currency": "Currency of the modified price (Optional)",
+          "energy_scale": "Energy scale (Optional)",
           "name": "Name (Optional)"
         }
       },
@@ -16,7 +17,8 @@
         "data": {
           "VAT_value": "VAT tariff",
           "modifyer": "Price Modifyer Template (Optional)",
-          "currency": "Currency of the modified price (Optional)"
+          "currency": "Currency of the modified price (Optional)",
+          "energy_scale": "Energy scale (Optional)"
         }
       }
     },
@@ -35,6 +37,7 @@
           "area": "Area*",
           "modifyer": "Price Modifyer Template (Optional)",
           "currency": "Currency of the modified price (Optional)",
+          "energy_scale": "Energy scale (Optional)",
           "VAT_value": "VAT tariff",
           "name": "Name (Optional)"
         }

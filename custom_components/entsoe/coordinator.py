@@ -12,7 +12,7 @@ from jinja2 import pass_context
 from requests.exceptions import HTTPError
 
 from .api_client import EntsoeClient
-from .const import AREA_INFO, CALCULATION_MODE, DEFAULT_MODIFYER
+from .const import AREA_INFO, ENERGY_SCALES, CALCULATION_MODE, DEFAULT_MODIFYER
 
 # depending on timezone les than 24 hours could be returned.
 MIN_HOURS = 20
@@ -26,6 +26,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         hass: HomeAssistant,
         api_key,
         area,
+        energy_scale,
         modifyer,
         calculation_mode=CALCULATION_MODE["default"],
         VAT=0,
@@ -35,6 +36,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         self.api_key = api_key
         self.modifyer = modifyer
         self.area = AREA_INFO[area]["code"]
+        self.energy_scale = energy_scale
         self.calculation_mode = calculation_mode
         self.vat = VAT
         self.today = None
@@ -64,10 +66,10 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         # Used to inject the current hour.
         # so template can be simplified using now
         if no_template:
-            price = round(value / 1000, 5)
+            price = round(value / ENERGY_SCALES[self.energy_scale], 5)
             return price
 
-        price = value / 1000
+        price = value / ENERGY_SCALES[self.energy_scale]
         if fake_dt is not None:
 
             def faker():

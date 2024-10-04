@@ -10,12 +10,14 @@ CONF_ENTITY_NAME = "name"
 CONF_AREA = "area"
 CONF_MODIFYER = "modifyer"
 CONF_CURRENCY = "currency"
+CONF_ENERGY_SCALE = "energy_scale"
 CONF_ADVANCED_OPTIONS = "advanced_options"
 CONF_CALCULATION_MODE = "calculation_mode"
 CONF_VAT_VALUE = "VAT_value"
 
 DEFAULT_MODIFYER = "{{current_price}}"
 DEFAULT_CURRENCY = CURRENCY_EURO
+DEFAULT_ENERGY_SCALE = "kWh"
 
 # default is only for internal use / backwards compatibility
 CALCULATION_MODE = {
@@ -24,6 +26,8 @@ CALCULATION_MODE = {
     "sliding": "sliding",
     "publish": "publish",
 }
+
+ENERGY_SCALES = { "kWh": 1000, "MWh": 1 }
 
 # Commented ones are not working at entsoe
 AREA_INFO = {

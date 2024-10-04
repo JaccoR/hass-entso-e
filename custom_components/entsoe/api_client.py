@@ -38,6 +38,14 @@ class EntsoeClient:
 
         return response
 
+    def _remove_namespace(self, tree):
+        """Remove namespaces in the passed XML tree for easier tag searching."""
+        for elem in tree.iter():
+            # Remove the namespace if present
+            if "}" in elem.tag:
+                elem.tag = elem.tag.split("}", 1)[1]
+        return tree
+
     def query_day_ahead_prices(
         self, country_code: Union[Area, str], start: datetime, end: datetime
     ) -> str:
@@ -62,20 +70,19 @@ class EntsoeClient:
 
         if response.status_code == 200:
             try:
-                xml_data = response.content
-                root = ET.fromstring(xml_data)
-                ns = {"ns": "urn:iec62325.351:tc57wg16:451-3:publicationdocument:7:0"}
+                root = self._remove_namespace(ET.fromstring(response.content))
+                _LOGGER.debug(f"content: {root}")
                 series = {}
 
                 # Extract TimeSeries data
-                for timeseries in root.findall("ns:TimeSeries", ns):
-                    period = timeseries.find("ns:Period", ns)
-                    resolution = period.find("ns:resolution", ns).text
+                for timeseries in root.findall(".//TimeSeries"):
+                    period = timeseries.find(".//Period")
+                    resolution = period.find(".//resolution").text
 
                     if resolution != "PT60M":
                         continue
 
-                    start_time = period.find("ns:timeInterval/ns:start", ns).text
+                    start_time = period.find(".//timeInterval/start").text
 
                     date = (
                         datetime.strptime(start_time, "%Y-%m-%dT%H:%MZ")
@@ -83,9 +90,9 @@ class EntsoeClient:
                         .astimezone()
                     )
 
-                    for point in period.findall("ns:Point", ns):
-                        position = point.find("ns:position", ns).text
-                        price = point.find("ns:price.amount", ns).text
+                    for point in period.findall(".//Point"):
+                        position = point.find(".//position").text
+                        price = point.find(".//price.amount").text
                         hour = int(position) - 1
                         series[date + timedelta(hours=hour)] = float(price)
 

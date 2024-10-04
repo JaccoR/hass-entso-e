@@ -76,25 +76,25 @@ class EntsoeClient:
 
                 # Extract TimeSeries data
                 for timeseries in root.findall(".//TimeSeries"):
-                    period = timeseries.find(".//Period")
-                    resolution = period.find(".//resolution").text
+                    for period in timeseries.findall(".//Period"):
+                        resolution = period.find(".//resolution").text
 
-                    if resolution != "PT60M":
-                        continue
+                        if resolution != "PT60M":
+                            continue
 
-                    start_time = period.find(".//timeInterval/start").text
+                        start_time = period.find(".//timeInterval/start").text
 
-                    date = (
-                        datetime.strptime(start_time, "%Y-%m-%dT%H:%MZ")
-                        .replace(tzinfo=pytz.UTC)
-                        .astimezone()
-                    )
+                        date = (
+                            datetime.strptime(start_time, "%Y-%m-%dT%H:%MZ")
+                            .replace(tzinfo=pytz.UTC)
+                            .astimezone()
+                        )
 
-                    for point in period.findall(".//Point"):
-                        position = point.find(".//position").text
-                        price = point.find(".//price.amount").text
-                        hour = int(position) - 1
-                        series[date + timedelta(hours=hour)] = float(price)
+                        for point in period.findall(".//Point"):
+                            position = point.find(".//position").text
+                            price = point.find(".//price.amount").text
+                            hour = int(position) - 1
+                            series[date + timedelta(hours=hour)] = float(price)
 
                 return series
             except Exception as exc:

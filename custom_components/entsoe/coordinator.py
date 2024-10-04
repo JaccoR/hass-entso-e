@@ -12,7 +12,7 @@ from jinja2 import pass_context
 from requests.exceptions import HTTPError
 
 from .api_client import EntsoeClient
-from .const import AREA_INFO, ENERGY_SCALES, CALCULATION_MODE, DEFAULT_MODIFYER
+from .const import AREA_INFO, CALCULATION_MODE, DEFAULT_MODIFYER, ENERGY_SCALES
 
 # depending on timezone les than 24 hours could be returned.
 MIN_HOURS = 20
@@ -118,6 +118,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
             self.logger.debug(
                 f"received pricing data from entso-e for {len(data)} hours"
             )
+            self.data = parsed_data
             self.filtered_hourprices = self._filter_calculated_hourprices(parsed_data)
             return parsed_data
 
@@ -195,8 +196,14 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         elif self.calculation_mode == CALCULATION_MODE["sliding"]:
             now = dt.now().replace(minute=0, second=0, microsecond=0)
             return {hour: price for hour, price in data.items() if hour >= now}
+        elif self.calculation_mode == CALCULATION_MODE["publish"] and len(data) > 48:
+            return {hour: price for hour, price in data.items() if hour >= self.today}
         elif self.calculation_mode == CALCULATION_MODE["publish"]:
-            return dict(list(data.items())[-48:])
+            return {
+                hour: price
+                for hour, price in data.items()
+                if hour >= self.today - timedelta(days=1)
+            }
 
     def get_prices_today(self):
         return self.get_timestamped_prices(self.get_data_today())
@@ -205,7 +212,17 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         return self.get_timestamped_prices(self.get_data_tomorrow())
 
     def get_prices(self):
-        return self.get_timestamped_prices(dict(list(self.data.items())[-48:]))
+        if len(self.data) > 48:
+            return self.get_timestamped_prices(
+                {hour: price for hour, price in self.data.items() if hour >= self.today}
+            )
+        return self.get_timestamped_prices(
+            {
+                hour: price
+                for hour, price in self.data.items()
+                if hour >= self.today - timedelta(days=1)
+            }
+        )
 
     def get_data(self, date):
         return {k: v for k, v in self.data.items() if k.date() == date.date()}

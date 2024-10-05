@@ -21,8 +21,8 @@ from homeassistant.helpers.template import Template
 
 from .const import (
     AREA_INFO,
-    ENERGY_SCALES,
     CALCULATION_MODE,
+    COMPONENT_TITLE,
     CONF_ADVANCED_OPTIONS,
     CONF_API_KEY,
     CONF_AREA,
@@ -36,6 +36,7 @@ from .const import (
     DEFAULT_ENERGY_SCALE,
     DEFAULT_MODIFYER,
     DOMAIN,
+    ENERGY_SCALES,
     UNIQUE_ID,
 )
 
@@ -86,16 +87,17 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
                 errors["base"] = "already_configured"
                 already_configured = True
 
-            if self.advanced_options:
-                return await self.async_step_extra()
-            user_input[CONF_VAT_VALUE] = 0
-            user_input[CONF_MODIFYER] = DEFAULT_MODIFYER
-            user_input[CONF_CURRENCY] = DEFAULT_CURRENCY
-            user_input[CONF_ENERGY_SCALE] = DEFAULT_ENERGY_SCALE
-            user_input[CONF_CALCULATION_MODE] = CALCULATION_MODE["default"]
             if not already_configured:
+                if self.advanced_options:
+                    return await self.async_step_extra()
+                user_input[CONF_VAT_VALUE] = 0
+                user_input[CONF_MODIFYER] = DEFAULT_MODIFYER
+                user_input[CONF_CURRENCY] = DEFAULT_CURRENCY
+                user_input[CONF_ENERGY_SCALE] = DEFAULT_ENERGY_SCALE
+                user_input[CONF_CALCULATION_MODE] = CALCULATION_MODE["default"]
+
                 return self.async_create_entry(
-                    title=self.name,
+                    title=self.name or COMPONENT_TITLE,
                     data={},
                     options={
                         CONF_API_KEY: user_input[CONF_API_KEY],
@@ -134,8 +136,6 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
 
     async def async_step_extra(self, user_input=None):
         """Handle VAT, template and calculation mode if requested."""
-        await self.async_set_unique_id(UNIQUE_ID)
-        self._abort_if_unique_id_configured()
         errors = {}
         already_configured = False
 
@@ -175,7 +175,7 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
                 if template_ok:
                     if "current_price" in user_input[CONF_MODIFYER]:
                         return self.async_create_entry(
-                            title=self.name,
+                            title=self.name or COMPONENT_TITLE,
                             data={},
                             options={
                                 CONF_API_KEY: user_input[CONF_API_KEY],
@@ -208,9 +208,9 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
                     vol.Optional(CONF_CURRENCY, default=DEFAULT_CURRENCY): vol.All(
                         vol.Coerce(str)
                     ),
-                    vol.Optional(CONF_ENERGY_SCALE, default=DEFAULT_ENERGY_SCALE): vol.In(
-                        list(ENERGY_SCALES.keys())
-                    ),
+                    vol.Optional(
+                        CONF_ENERGY_SCALE, default=DEFAULT_ENERGY_SCALE
+                    ): vol.In(list(ENERGY_SCALES.keys())),
                     vol.Optional(
                         CONF_CALCULATION_MODE, default=CALCULATION_MODE["default"]
                     ): SelectSelector(

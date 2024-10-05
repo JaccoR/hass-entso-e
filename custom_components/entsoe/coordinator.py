@@ -178,12 +178,15 @@ class EntsoeCoordinator(DataUpdateCoordinator):
             }
         return self.parse_hourprices(await self.fetch_prices(start_date, end_date))
 
-    def today_data_available(self):
+    def update_data(self):
         now = dt.now()
         if self.today.date() != now.date():
             self.logger.debug(f"new day detected: update today and filtered hourprices")
             self.today = now.replace(hour=0, minute=0, second=0, microsecond=0)
-            self.filtered_hourprices = self._filter_calculated_hourprices(self.data)
+
+        self.filtered_hourprices = self._filter_calculated_hourprices(self.data)
+
+    def today_data_available(self):
         return len(self.get_data_today()) > MIN_HOURS
 
     def _filter_calculated_hourprices(self, data):

@@ -190,17 +190,21 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         return len(self.get_data_today()) > MIN_HOURS
 
     def _filter_calculated_hourprices(self, data):
+        # rotation = calculations made upon 24hrs today
         if self.calculation_mode == CALCULATION_MODE["rotation"]:
             return {
                 hour: price
                 for hour, price in data.items()
                 if hour >= self.today and hour < self.today + timedelta(days=1)
             }
+        # sliding = calculations made on all data from the current hour and beyond (future data only)
         elif self.calculation_mode == CALCULATION_MODE["sliding"]:
             now = dt.now().replace(minute=0, second=0, microsecond=0)
-            return {hour: price for hour, price in data.items() if hour >= now}
+            return {hour: price for hour, price in data.items() if now < hour < now + timedelta(hours=16)}
+        # rotation = calculations made on all data of today and tomorrow (48 hrs) if we have 72hrs of data
         elif self.calculation_mode == CALCULATION_MODE["publish"] and len(data) > 48:
             return {hour: price for hour, price in data.items() if hour >= self.today}
+        # rotation = calculations made on all data of yesterday and today (48 hrs) 
         elif self.calculation_mode == CALCULATION_MODE["publish"]:
             return {
                 hour: price

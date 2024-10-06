@@ -96,7 +96,21 @@ class EntsoeClient:
                             hour = int(position) - 1
                             series[date + timedelta(hours=hour)] = float(price)
 
+                # Start filling from the first hour in the series until the requested end
+                current_time = min(series.keys(), default=None)  # Start from the first time in response
+                if current_time is None:
+                    return series  # No valid data received from the server
+
+                last_price = series[current_time]
+
+                while current_time < end:
+                    if current_time in series:
+                        last_price = series[current_time]  # Update to the current price
+                    else:
+                        series[current_time] = last_price  # Fill with the last known price
+                    current_time += timedelta(hours=1)
                 return series
+            
             except Exception as exc:
                 _LOGGER.debug(f"Failed to parse response content:{response.content}")
                 raise exc

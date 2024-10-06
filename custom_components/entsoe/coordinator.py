@@ -178,15 +178,12 @@ class EntsoeCoordinator(DataUpdateCoordinator):
             }
         return self.parse_hourprices(await self.fetch_prices(start_date, end_date))
 
-    def update_data(self):
+    def today_data_available(self):
         now = dt.now()
         if self.today.date() != now.date():
             self.logger.debug(f"new day detected: update today and filtered hourprices")
             self.today = now.replace(hour=0, minute=0, second=0, microsecond=0)
-
-        self.filtered_hourprices = self._filter_calculated_hourprices(self.data)
-
-    def today_data_available(self):
+            self.filtered_hourprices = self._filter_calculated_hourprices(self.data)
         return len(self.get_data_today()) > MIN_HOURS
 
     def _filter_calculated_hourprices(self, data):
@@ -269,6 +266,12 @@ class EntsoeCoordinator(DataUpdateCoordinator):
 
     def get_percentage_of_max(self):
         return round(self.get_current_hourprice() / self.get_max_price() * 100, 1)
+
+    def get_percentage(self):
+        min = self.get_min_price()
+        spread = self.get_max_price() - min
+        current = self.get_current_hourprice() - min
+        return round(current / spread * 100, 1)
 
     def get_timestamped_prices(self, hourprices):
         list = []

@@ -46,9 +46,7 @@ class EntsoeEntityDescription(SensorEntityDescription):
     value_fn: Callable[[dict], StateType] = None
 
 
-def sensor_descriptions(
-    currency: str, energy_scale: str
-) -> tuple[EntsoeEntityDescription, ...]:
+def sensor_descriptions(currency: str, energy_scale: str) -> tuple[EntsoeEntityDescription, ...]:
     """Construct EntsoeEntityDescription."""
     return (
         EntsoeEntityDescription(
@@ -106,6 +104,15 @@ def sensor_descriptions(
             value_fn=lambda coordinator: coordinator.get_percentage_of_max(),
         ),
         EntsoeEntityDescription(
+            key="percentage",
+            name="Current percentage",
+            native_unit_of_measurement=f"{PERCENTAGE}",
+            icon="mdi:percent",
+            suggested_display_precision=1,
+            state_class=SensorStateClass.MEASUREMENT,
+            value_fn=lambda coordinator: coordinator.get_percentage(),
+        ),
+        EntsoeEntityDescription(
             key="highest_price_time_today",
             name="Time of highest price",
             device_class=SensorDeviceClass.TIMESTAMP,
@@ -134,7 +141,7 @@ async def async_setup_entry(
     entity = {}
     for description in sensor_descriptions(
         currency=config_entry.options.get(CONF_CURRENCY, DEFAULT_CURRENCY),
-        energy_scale=config_entry.options.get(CONF_ENERGY_SCALE, DEFAULT_ENERGY_SCALE),
+        energy_scale=config_entry.options.get(CONF_ENERGY_SCALE, DEFAULT_ENERGY_SCALE)
     ):
         entity = description
         entities.append(
@@ -214,8 +221,6 @@ class EntsoeSensor(CoordinatorEntity, RestoreSensor):
             self._update_job,
             utcnow().replace(minute=0, second=0) + timedelta(hours=1),
         )
-
-        self.coordinator.update_data()
 
         if (
             self.coordinator.data is not None

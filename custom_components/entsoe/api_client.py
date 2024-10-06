@@ -96,20 +96,24 @@ class EntsoeClient:
                             hour = int(position) - 1
                             series[date + timedelta(hours=hour)] = float(price)
 
-                # Start filling from the first hour in the series until the requested end
-                current_time = min(series.keys(), default=None)  # Start from the first time in response
-                if current_time is None:
+                # Get the min and max time from the server response
+                first_response_time = min(series.keys(), default=None)
+                last_response_time = max(series.keys(), default=None)
+
+                if first_response_time is None or last_response_time is None:
                     return series  # No valid data received from the server
 
+                # Now only fill in missing hours between the first and last response times
+                current_time = first_response_time
                 last_price = series[current_time]
 
-                while current_time < end:
+                while current_time <= last_response_time:
                     if current_time in series:
                         last_price = series[current_time]  # Update to the current price
                     else:
                         series[current_time] = last_price  # Fill with the last known price
                     current_time += timedelta(hours=1)
-                    
+
                 return series
                 
             except Exception as exc:

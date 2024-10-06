@@ -46,7 +46,9 @@ class EntsoeEntityDescription(SensorEntityDescription):
     value_fn: Callable[[dict], StateType] = None
 
 
-def sensor_descriptions(currency: str, energy_scale: str) -> tuple[EntsoeEntityDescription, ...]:
+def sensor_descriptions(
+    currency: str, energy_scale: str
+) -> tuple[EntsoeEntityDescription, ...]:
     """Construct EntsoeEntityDescription."""
     return (
         EntsoeEntityDescription(
@@ -141,7 +143,7 @@ async def async_setup_entry(
     entity = {}
     for description in sensor_descriptions(
         currency=config_entry.options.get(CONF_CURRENCY, DEFAULT_CURRENCY),
-        energy_scale=config_entry.options.get(CONF_ENERGY_SCALE, DEFAULT_ENERGY_SCALE)
+        energy_scale=config_entry.options.get(CONF_ENERGY_SCALE, DEFAULT_ENERGY_SCALE),
     ):
         entity = description
         entities.append(
@@ -221,6 +223,8 @@ class EntsoeSensor(CoordinatorEntity, RestoreSensor):
             self._update_job,
             utcnow().replace(minute=0, second=0) + timedelta(hours=1),
         )
+
+        self.coordinator.update_data()
 
         if (
             self.coordinator.data is not None

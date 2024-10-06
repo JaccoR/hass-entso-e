@@ -109,8 +109,9 @@ class EntsoeClient:
                     else:
                         series[current_time] = last_price  # Fill with the last known price
                     current_time += timedelta(hours=1)
+                    
                 return series
-            
+                
             except Exception as exc:
                 _LOGGER.debug(f"Failed to parse response content:{response.content}")
                 raise exc

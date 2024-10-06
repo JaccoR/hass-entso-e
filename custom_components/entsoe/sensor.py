@@ -106,13 +106,13 @@ def sensor_descriptions(
             value_fn=lambda coordinator: coordinator.get_percentage_of_max(),
         ),
         EntsoeEntityDescription(
-            key="percentage",
-            name="Current percentage",
+            key="percentage_of_range",
+            name="Current Price Percentage in Range",
             native_unit_of_measurement=f"{PERCENTAGE}",
             icon="mdi:percent",
             suggested_display_precision=1,
             state_class=SensorStateClass.MEASUREMENT,
-            value_fn=lambda coordinator: coordinator.get_percentage(),
+            value_fn=lambda coordinator: coordinator.get_percentage_of_range(),
         ),
         EntsoeEntityDescription(
             key="highest_price_time_today",

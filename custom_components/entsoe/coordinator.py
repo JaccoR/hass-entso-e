@@ -200,7 +200,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         # sliding = calculations made on all data from the current hour and beyond (future data only)
         elif self.calculation_mode == CALCULATION_MODE["sliding"]:
             now = dt.now().replace(minute=0, second=0, microsecond=0)
-            return {hour: price for hour, price in data.items() if now < hour < now + timedelta(hours=16)}
+            return {hour: price for hour, price in data.items() if hour >= now}
         # rotation = calculations made on all data of today and tomorrow (48 hrs) if we have 72hrs of data
         elif self.calculation_mode == CALCULATION_MODE["publish"] and len(data) > 48:
             return {hour: price for hour, price in data.items() if hour >= self.today}
@@ -274,7 +274,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
     def get_percentage_of_max(self):
         return round(self.get_current_hourprice() / self.get_max_price() * 100, 1)
 
-    def get_percentage(self):
+    def get_percentage_of_range(self):
         min = self.get_min_price()
         spread = self.get_max_price() - min
         current = self.get_current_hourprice() - min

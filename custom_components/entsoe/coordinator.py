@@ -255,27 +255,53 @@ class EntsoeCoordinator(DataUpdateCoordinator):
 
     # ANALYSIS: filter the hourprices on which to apply the calculations based on the calculation_mode
     def _filter_calculated_hourprices(self, data):
-        # rotation = calculations made upon 24hrs today
-        if self.calculation_mode == CALCULATION_MODE["rotation"]:
+        if self.calculation_mode == CALCULATION_MODE["daily"]:
+            self.logger.debug(f"Filter dataset for prices today -> refresh each day")
             return {
                 hour: price
                 for hour, price in data.items()
                 if hour >= self.today and hour < self.today + timedelta(days=1)
             }
-        # sliding = calculations made on all data from the current hour and beyond (future data only)
+
         elif self.calculation_mode == CALCULATION_MODE["sliding"]:
-            now = dt.now().replace(minute=0, second=0, microsecond=0)
-            return {hour: price for hour, price in data.items() if hour >= now}
-        # publish >48 hrs of data = calculations made on all data of today and tomorrow (48 hrs)
-        elif self.calculation_mode == CALCULATION_MODE["publish"] and len(data) > 48:
-            return {hour: price for hour, price in data.items() if hour >= self.today}
-        # publish <=48 hrs of data = calculations made on all data of yesterday and today (48 hrs)
-        elif self.calculation_mode == CALCULATION_MODE["publish"]:
-            return {
-                hour: price
-                for hour, price in data.items()
-                if hour >= self.today - timedelta(days=1)
-            }
+            start = dt.now().replace(minute=0, second=0, microsecond=0)
+            start -= timedelta(hours=12)
+            end = start + timedelta(hours=24)
+            self.logger.debug(
+                f"Filter dataset to surrounding 24hrs {start} - {end} -> refresh each hour"
+            )
+            return {hour: price for hour, price in data.items() if start < hour < end}
+
+        elif self.calculation_mode == CALCULATION_MODE["sliding-12"]:
+            start = dt.now().replace(minute=0, second=0, microsecond=0)
+            start -= timedelta(hours=6)
+            end = start + timedelta(hours=12)
+            self.logger.debug(
+                f"Filter dataset to surrounding 12hrs {start} - {end} -> refresh each hour"
+            )
+            return {hour: price for hour, price in data.items() if start < hour < end}
+
+        elif self.calculation_mode == CALCULATION_MODE["forecast"]:
+            start = dt.now().replace(minute=0, second=0, microsecond=0)
+            end = start + timedelta(hours=24)
+            self.logger.debug(
+                f"Filter dataset to upcomming 24hrs {start} - {end} -> refresh each hour"
+            )
+            return {hour: price for hour, price in data.items() if start < hour < end}
+
+        elif self.calculation_mode == CALCULATION_MODE["forecast-12"]:
+            start = dt.now().replace(minute=0, second=0, microsecond=0)
+            end = start + timedelta(hours=12)
+            self.logger.debug(
+                f"Filter dataset to upcomming 24hrs {start} - {end} -> refresh each hour"
+            )
+            return {hour: price for hour, price in data.items() if start < hour < end}
+
+        # default elif self.calculation_mode == CALCULATION_MODE["publish"]:
+        self.logger.debug(
+            f"Do not filter the dataset, use the complete dataset as fetched"
+        )
+        return {hour: price for hour, price in data.items()}
 
     # ANALYSIS: Get max price in filtered period
     def get_max_price(self):

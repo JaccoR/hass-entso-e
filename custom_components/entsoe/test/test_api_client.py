@@ -130,5 +130,14 @@ class TestDocumentParsing(unittest.TestCase):
             datetime.fromisoformat("2024-10-08T21:00:00Z"): 50,
         })
 
+    def test_de_60m_15m_overlap(self):
+        with open("test/datasets/DE_60M_15M_overlap.xml") as f:
+            data = f.read()
+
+        self.assertEqual(self.client.parse_price_document(data)[datetime.fromisoformat("2024-10-05T22:00:00Z")], 67.04)
+        self.assertEqual(self.client.parse_price_document(data)[datetime.fromisoformat("2024-10-06T22:00:00Z")], 34.58)
+        self.assertEqual(self.client.parse_price_document(data)[datetime.fromisoformat("2024-10-07T21:00:00Z")], 79.12)
+
+
 if __name__ == '__main__':
     unittest.main()

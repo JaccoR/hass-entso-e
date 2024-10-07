@@ -82,21 +82,42 @@ class EntsoeClient:
                         if resolution != "PT60M":
                             continue
 
-                        start_time = period.find(".//timeInterval/start").text
-
-                        date = (
-                            datetime.strptime(start_time, "%Y-%m-%dT%H:%MZ")
+                        response_start = period.find(".//timeInterval/start").text
+                        start_time = (
+                            datetime.strptime(response_start, "%Y-%m-%dT%H:%MZ")
                             .replace(tzinfo=pytz.UTC)
                             .astimezone()
                         )
+
+                        response_end = period.find(".//timeInterval/end").text
+                        end_time = (
+                            datetime.strptime(response_end, "%Y-%m-%dT%H:%MZ")
+                            .replace(tzinfo=pytz.UTC)
+                            .astimezone()
+                        )
+
+                        _LOGGER.debug(f"Period found is from {start_time} till {end_time}")
 
                         for point in period.findall(".//Point"):
                             position = point.find(".//position").text
                             price = point.find(".//price.amount").text
                             hour = int(position) - 1
-                            series[date + timedelta(hours=hour)] = float(price)
+                            series[start_time + timedelta(hours=hour)] = float(price)
 
-                return series
+                        # Now fill in any missing hours 
+                        current_time = start_time
+                        last_price = series[current_time]
+
+                        while current_time < end_time:  # upto excluding! the endtime
+                            if current_time in series:
+                                last_price = series[current_time]  # Update to the current price
+                            else:
+                                _LOGGER.debug(f"Extending the price {last_price} of the previous hour to {current_time}")
+                                series[current_time] = last_price  # Fill with the last known price
+                            current_time += timedelta(hours=1)
+
+                return dict(sorted(series.items()))
+
             except Exception as exc:
                 _LOGGER.debug(f"Failed to parse response content:{response.content}")
                 raise exc

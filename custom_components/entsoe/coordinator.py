@@ -190,17 +190,21 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         return len(self.get_data_today()) > MIN_HOURS
 
     def _filter_calculated_hourprices(self, data):
+        # rotation = calculations made upon 24hrs today
         if self.calculation_mode == CALCULATION_MODE["rotation"]:
             return {
                 hour: price
                 for hour, price in data.items()
                 if hour >= self.today and hour < self.today + timedelta(days=1)
             }
+        # sliding = calculations made on all data from the current hour and beyond (future data only)
         elif self.calculation_mode == CALCULATION_MODE["sliding"]:
             now = dt.now().replace(minute=0, second=0, microsecond=0)
             return {hour: price for hour, price in data.items() if hour >= now}
+        # publish >48 hrs of data = calculations made on all data of today and tomorrow (48 hrs)
         elif self.calculation_mode == CALCULATION_MODE["publish"] and len(data) > 48:
             return {hour: price for hour, price in data.items() if hour >= self.today}
+        # publish <=48 hrs of data = calculations made on all data of yesterday and today (48 hrs) 
         elif self.calculation_mode == CALCULATION_MODE["publish"]:
             return {
                 hour: price
@@ -269,6 +273,12 @@ class EntsoeCoordinator(DataUpdateCoordinator):
 
     def get_percentage_of_max(self):
         return round(self.get_current_hourprice() / self.get_max_price() * 100, 1)
+
+    def get_percentage_of_range(self):
+        min = self.get_min_price()
+        spread = self.get_max_price() - min
+        current = self.get_current_hourprice() - min
+        return round(current / spread * 100, 1)
 
     def get_timestamped_prices(self, hourprices):
         list = []

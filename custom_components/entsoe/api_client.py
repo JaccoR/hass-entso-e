@@ -89,12 +89,14 @@ class EntsoeClient:
                             .astimezone()
                         )
 
-                        response_end = period.find(".//timeInterval/start").text
+                        response_end = period.find(".//timeInterval/end").text
                         end_time = (
                             datetime.strptime(response_end, "%Y-%m-%dT%H:%MZ")
                             .replace(tzinfo=pytz.UTC)
                             .astimezone()
                         )
+
+                        _LOGGER.debug(f"Period found is from {start_time} till {end_time}")
 
                         for point in period.findall(".//Point"):
                             position = point.find(".//position").text
@@ -106,10 +108,11 @@ class EntsoeClient:
                         current_time = start_time
                         last_price = series[current_time]
 
-                        while current_time <= end_time:
+                        while current_time < end_time:  # upto excluding! the endtime
                             if current_time in series:
                                 last_price = series[current_time]  # Update to the current price
                             else:
+                                _LOGGER.debug(f"Extending the price {last_price} of the previous hour to {current_time}")
                                 series[current_time] = last_price  # Fill with the last known price
                             current_time += timedelta(hours=1)
 

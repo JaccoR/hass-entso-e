@@ -201,10 +201,10 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         elif self.calculation_mode == CALCULATION_MODE["sliding"]:
             now = dt.now().replace(minute=0, second=0, microsecond=0)
             return {hour: price for hour, price in data.items() if hour >= now}
-        # rotation = calculations made on all data of today and tomorrow (48 hrs) if we have 72hrs of data
+        # publish >48 hrs of data = calculations made on all data of today and tomorrow (48 hrs)
         elif self.calculation_mode == CALCULATION_MODE["publish"] and len(data) > 48:
             return {hour: price for hour, price in data.items() if hour >= self.today}
-        # rotation = calculations made on all data of yesterday and today (48 hrs) 
+        # publish <=48 hrs of data = calculations made on all data of yesterday and today (48 hrs) 
         elif self.calculation_mode == CALCULATION_MODE["publish"]:
             return {
                 hour: price

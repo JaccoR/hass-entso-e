@@ -214,16 +214,16 @@ class EntsoeCoordinator(DataUpdateCoordinator):
             self.logger.debug(f"Filter dataset to surrounding 12hrs {start} - {end} -> refresh each hour")
             return {hour: price for hour, price in data.items() if start < hour < end }
 
-        elif self.calculation_mode == CALCULATION_MODE["forecast"]:
+        elif self.calculation_mode == CALCULATION_MODE["forward"]:
             start = dt.now().replace(minute=0, second=0, microsecond=0)
             end = start + timedelta(hours=24)
             self.logger.debug(f"Filter dataset to upcomming 24hrs {start} - {end} -> refresh each hour")
             return {hour: price for hour, price in data.items() if start < hour < end }
         
-        elif self.calculation_mode == CALCULATION_MODE["forecast-12"]:
+        elif self.calculation_mode == CALCULATION_MODE["forward-12"]:
             start = dt.now().replace(minute=0, second=0, microsecond=0)
             end = start + timedelta(hours=12)
-            self.logger.debug(f"Filter dataset to upcomming 24hrs {start} - {end} -> refresh each hour")
+            self.logger.debug(f"Filter dataset to upcomming 12hrs {start} - {end} -> refresh each hour")
             return {hour: price for hour, price in data.items() if start < hour < end }
         
         # default elif self.calculation_mode == CALCULATION_MODE["publish"]:

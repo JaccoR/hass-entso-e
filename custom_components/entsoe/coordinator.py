@@ -281,7 +281,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
             )
             return {hour: price for hour, price in data.items() if start < hour < end}
 
-        elif self.calculation_mode == CALCULATION_MODE["forecast"]:
+        elif self.calculation_mode == CALCULATION_MODE["forward"]:
             start = dt.now().replace(minute=0, second=0, microsecond=0)
             end = start + timedelta(hours=24)
             self.logger.debug(

@@ -26,8 +26,8 @@ CALCULATION_MODE = {
     "daily":        "daily",         
     "sliding":      "sliding",       
     "sliding-12":   "sliding-12",   # new half day sliding
-    "forecast":     "forecast",     # 24hrs forward looking
-    "forecast-12":  "forecast-12",  # 12hrs forward looking
+    "forward":      "forward",     # 24hrs forward looking
+    "forward-12":   "forward-12",  # 12hrs forward looking
 }
 
 ENERGY_SCALES = { "kWh": 1000, "MWh": 1 }

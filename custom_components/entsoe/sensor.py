@@ -107,7 +107,7 @@ def sensor_descriptions(
         ),
         EntsoeEntityDescription(
             key="percentage_of_range",
-            name="Current Price Percentage in Range",
+            name="Current percentage in electricity price range",
             native_unit_of_measurement=f"{PERCENTAGE}",
             icon="mdi:percent",
             suggested_display_precision=1,

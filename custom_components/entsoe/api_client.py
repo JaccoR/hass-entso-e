@@ -82,10 +82,16 @@ class EntsoeClient:
                         if resolution != "PT60M":
                             continue
 
-                        start_time = period.find(".//timeInterval/start").text
+                        response_start = period.find(".//timeInterval/start").text
+                        start_time = (
+                            datetime.strptime(response_start, "%Y-%m-%dT%H:%MZ")
+                            .replace(tzinfo=pytz.UTC)
+                            .astimezone()
+                        )
 
-                        date = (
-                            datetime.strptime(start_time, "%Y-%m-%dT%H:%MZ")
+                        response_end = period.find(".//timeInterval/start").text
+                        end_time = (
+                            datetime.strptime(response_end, "%Y-%m-%dT%H:%MZ")
                             .replace(tzinfo=pytz.UTC)
                             .astimezone()
                         )
@@ -94,28 +100,21 @@ class EntsoeClient:
                             position = point.find(".//position").text
                             price = point.find(".//price.amount").text
                             hour = int(position) - 1
-                            series[date + timedelta(hours=hour)] = float(price)
+                            series[start_time + timedelta(hours=hour)] = float(price)
 
-                # Get the min and max time from the server response
-                first_response_time = min(series.keys(), default=None)
-                last_response_time = max(series.keys(), default=None)
+                        # Now fill in any missing hours 
+                        current_time = start_time
+                        last_price = series[current_time]
 
-                if first_response_time is None or last_response_time is None:
-                    return series  # No valid data received from the server
-
-                # Now only fill in missing hours between the first and last response times
-                current_time = first_response_time
-                last_price = series[current_time]
-
-                while current_time <= last_response_time:
-                    if current_time in series:
-                        last_price = series[current_time]  # Update to the current price
-                    else:
-                        series[current_time] = last_price  # Fill with the last known price
-                    current_time += timedelta(hours=1)
+                        while current_time <= end_time:
+                            if current_time in series:
+                                last_price = series[current_time]  # Update to the current price
+                            else:
+                                series[current_time] = last_price  # Fill with the last known price
+                            current_time += timedelta(hours=1)
 
                 return series
-                
+
             except Exception as exc:
                 _LOGGER.debug(f"Failed to parse response content:{response.content}")
                 raise exc

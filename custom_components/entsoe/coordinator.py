@@ -40,6 +40,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         self.calculation_mode = calculation_mode
         self.vat = VAT
         self.today = None
+        self.calculator_last_sync = None
         self.filtered_hourprices = []
 
         # Check incase the sensor was setup using config flow.
@@ -61,6 +62,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
             update_interval=timedelta(minutes=60),
         )
 
+    # calculate the price using the given template
     def calc_price(self, value, fake_dt=None, no_template=False) -> float:
         """Calculate price based on the users settings."""
         # Used to inject the current hour.
@@ -93,6 +95,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
             hourprices[hour] = self.calc_price(value=price, fake_dt=hour)
         return hourprices
 
+    # Called by HA every refresh interval (60 minutes)
     async def _async_update_data(self) -> dict:
         """Get the latest data from ENTSO-e"""
         self.logger.debug("ENTSO-e DataUpdateCoordinator data update")
@@ -178,16 +181,28 @@ class EntsoeCoordinator(DataUpdateCoordinator):
             }
         return self.parse_hourprices(await self.fetch_prices(start_date, end_date))
 
-    def update_data(self):
-        now = dt.now()
-        if self.today.date() != now.date():
-            self.logger.debug(f"new day detected: update today and filtered hourprices")
-            self.today = now.replace(hour=0, minute=0, second=0, microsecond=0)
-
-        self.filtered_hourprices = self._filter_calculated_hourprices(self.data)
-
     def today_data_available(self):
         return len(self.get_data_today()) > MIN_HOURS
+
+    # this method is called by each sensor, each complete hour, and ensures the date and filtered hourprices are in line with the current time
+    # we could still optimize as not every calculator mode needs hourly updates
+    def sync_calculator(self):
+        now = dt.now()
+        if (
+            self.calculator_last_sync is None
+            or self.calculator_last_sync.hour != now.hour
+        ):
+            self.logger.debug(
+                f"The calculator needs to be synced with the current time"
+            )
+            if self.today.date() != now.date():
+                self.logger.debug(
+                    f"new day detected: update today and filtered hourprices"
+                )
+                self.today = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            self.filtered_hourprices = self._filter_calculated_hourprices(self.data)
+
+        self.calculator_last_sync = now
 
     def _filter_calculated_hourprices(self, data):
         # rotation = calculations made upon 24hrs today
@@ -204,7 +219,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         # publish >48 hrs of data = calculations made on all data of today and tomorrow (48 hrs)
         elif self.calculation_mode == CALCULATION_MODE["publish"] and len(data) > 48:
             return {hour: price for hour, price in data.items() if hour >= self.today}
-        # publish <=48 hrs of data = calculations made on all data of yesterday and today (48 hrs) 
+        # publish <=48 hrs of data = calculations made on all data of yesterday and today (48 hrs)
         elif self.calculation_mode == CALCULATION_MODE["publish"]:
             return {
                 hour: price

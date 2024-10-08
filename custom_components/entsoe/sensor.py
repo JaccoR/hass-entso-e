@@ -224,7 +224,8 @@ class EntsoeSensor(CoordinatorEntity, RestoreSensor):
             utcnow().replace(minute=0, second=0) + timedelta(hours=1),
         )
 
-        self.coordinator.update_data()
+        # ensure the calculated data is refreshed by the changing hour
+        self.coordinator.sync_calculator()
 
         if (
             self.coordinator.data is not None

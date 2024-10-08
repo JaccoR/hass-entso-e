@@ -14,7 +14,8 @@ email address you entered during registration in the email body.
 The integration adds the following sensors:
 - Current Electricity Price
 - Next Hour Electricity Price
-#### Analysis sensors (dependent on configured analysis window)
+
+And some price analysis sensors:
 - Average Day-Ahead Electricity Price (This integration carries attributes with all prices)
 - Current Percentage Relative To Highest Electricity Price
 - Current Percentage Relative To Spread Electricity Price
@@ -82,35 +83,43 @@ An example template is given below. You can find and share other templates [here
 {% endif %}
 ```
 ### Analysis Window (previously called Calculation method)
-The analysis window defines which period to use for calculating the min,max,avg & perc values. The window can be set to:
+The analysis window defines which period to use for calculating the min,max,avg & perc values. 
+
+The analysis window can be set to:
 
 - Publish (Default)
+
 The min/max/etc entities will get updated once new data becomes available (usualy between 12:00 and 15:00)
 It also means that until the next days pricing becomes available the analysis is performed on the latest 48h of available data (yesterday and today)
 
 - Today
+
 The analysis is performed on todays data. Sensor data will be updated at midnight
 
 - Sliding-12
+
 An analysis window of 12 hours which moves along with the changing hour. Meaning the analysis sensors change each hour.
 The window starts 6-hours before tha last hour and ends 6 hrs after. So its using a 12 hour window to detect half-day low-/high price periods
 
 - Sliding-24
+
 Same as above but using a 24 hour sliding analysis window
 
 - Forward-12
+
 Same 12 hours sliding window, however starting from the last hour upto 12 hours beyond. Usefull to detect half-day min/max values whih occur in the future. 
+
 Note: being updated each hour the timestamp of sensors (like minimum price) may just change before a trigger is fired by another, even lower price, getting included in the analysis window. As such teh turning on of a device may be delayed for another 12 hours. This continues while lower prices are being announced within a 12 hour timeframe. This may be helpfull when you want to charge your EV with the lowest price being forecasted
 
 - Forward-24
+
 Same as above but using a 24 hour window.
 
-#### Legacy
-- Sliding
-Replaced by 'forward-24'
+- Sliding depricated. Please use 'forward-24'
 
-- Rotation
-Replaced by 'Today'
+- Rotation depricated. Please use 'Today'
+
+
 
 ### ApexChart Graph
 Prices can be shown using the [ApexChart Graph Card](https://github.com/RomRider/apexcharts-card) like in the example above. The Lovelace code for this graph is given below:

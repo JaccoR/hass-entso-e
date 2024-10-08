@@ -184,18 +184,17 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         return {k: v for k, v in self.data.items() if k.date() == date.date()}
 
     # ENTSO: Return a valid 48hrs dataset as in some occassions we only have 48hrs of data
-    # -> fetch starts after 11:00 after which we loose the data of the day before yesterday
-    # -> until we obtain tomorrow's data we only have 48hrs of data (of yesterday and today)
-    # -> after ~13:00 we will be back to 72hrs of cached data
+    # when we fetch data between 0:00 and ~13:00 we will only get yesterdays and todays data (48hrs)
+    # after ~13:00 we will be back to 72hrs of cached data, including tomorrows
     def get_48hrs_data(self):
         today = self.get_data_today()
-        tommorrow = self.get_data_tomorrow()
+        tomorrow = self.get_data_tomorrow()
 
-        if len(tommorrow) < MIN_HOURS:
+        if len(tomorrow) < MIN_HOURS:
             yesterday = self.get_data_yesterday()
             return {**yesterday, **today}
 
-        return {**today, **tommorrow}
+        return {**today, **tomorrow}
 
     # ENTSO: Return the data for today
     def get_data_today(self):

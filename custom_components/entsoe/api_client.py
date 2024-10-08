@@ -79,7 +79,9 @@ class EntsoeClient:
                     for period in timeseries.findall(".//Period"):
                         resolution = period.find(".//resolution").text
 
-                        if resolution != "PT60M":
+                        if resolution == "PT60M" or resolution == "PT1H":
+                            resolution = "PT60M"
+                        elif resolution != "PT15M":
                             continue
 
                         response_start = period.find(".//timeInterval/start").text
@@ -88,6 +90,7 @@ class EntsoeClient:
                             .replace(tzinfo=pytz.UTC)
                             .astimezone()
                         )
+                        start_time.replace(minute=0)    # ensure we start from the whole hour
 
                         response_end = period.find(".//timeInterval/end").text
                         end_time = (
@@ -95,20 +98,18 @@ class EntsoeClient:
                             .replace(tzinfo=pytz.UTC)
                             .astimezone()
                         )
-
                         _LOGGER.debug(f"Period found is from {start_time} till {end_time}")
 
-                        for point in period.findall(".//Point"):
-                            position = point.find(".//position").text
-                            price = point.find(".//price.amount").text
-                            hour = int(position) - 1
-                            series[start_time + timedelta(hours=hour)] = float(price)
+                        if resolution == "PT60M":
+                            series = self.process_PT60M_points(period, start_time)
+                        else:
+                            series = self.process_PT15M_points(period, start_time)
 
                         # Now fill in any missing hours 
                         current_time = start_time
                         last_price = series[current_time]
 
-                        while current_time < end_time:  # upto excluding! the endtime
+                        while current_time < end_time:             # upto excluding! the endtime
                             if current_time in series:
                                 last_price = series[current_time]  # Update to the current price
                             else:
@@ -125,6 +126,54 @@ class EntsoeClient:
             print(f"Failed to retrieve data: {response.status_code}")
             return None
 
+    # processing hourly prices info
+    def process_PT60M_points(self, period: Element, start_time: datetime):
+        data = {}
+        for point in period.findall(".//Point"):
+            position = point.find(".//position").text
+            price = point.find(".//price.amount").text
+            hour = int(position) - 1
+            time = start_time + timedelta(hours=hour)
+            data[time] = float(price)
+        return data
+
+    # processing quarterly prices
+    def process_PT15M_points(self, period: Element, start_time: datetime):
+        positions = {}
+        # first store all positions       
+        for point in period.findall(".//Point"):
+            position = point.find(".//position").text
+            price = point.find(".//price.amount").text
+            positions[int(position)] = float(price)
+
+        # find the last position and add quarters to fill upto the hour        
+        last = max(positions.keys)
+        remaining = last % 4
+        if (remaining != 0):
+            last += (4-remaining)
+
+        # now fill in any missing quarter values
+        last_price = positions[idx]
+        for idx in range(1, last):
+            if idx not in positions:
+                position[idx] = last_price
+            else:
+                last_price = position[idx]
+        
+        # lets now convert all these quarter values to hours
+        data = {}
+        idx = 1
+        while (idx+3 <= last):
+            avg_price = sum(
+                [positions.get(idx+1, 0), 
+                 positions.get(idx+2, 0),
+                 positions.get(idx+3, 0),
+                 positions.get(idx+4, 0)]) / 4
+            hour = idx // 4
+            time = start_time + timedelta(hours=hour)
+            data[time] = float(avg_price)
+               
+        return data
 
 class Area(enum.Enum):
     """

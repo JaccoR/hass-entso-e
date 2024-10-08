@@ -12,12 +12,14 @@ email address you entered during registration in the email body.
 
 ### Sensors
 The integration adds the following sensors:
-- Average Day-Ahead Electricity Price Today (This integration carries attributes with all prices)
-- Highest Day-Ahead Electricity Price Today
-- Lowest Day-Ahead Electricity Price Today
-- Current Day-Ahead Electricity Price
-- Current Percentage Relative To Highest Electricity Price Of The Day
-- Next Hour Day-Ahead Electricity Price
+- Current Electricity Price
+- Next Hour Electricity Price
+#### Analysis sensors (dependent on configured analysis window)
+- Average Day-Ahead Electricity Price (This integration carries attributes with all prices)
+- Current Percentage Relative To Highest Electricity Price
+- Current Percentage Relative To Spread Electricity Price
+- Highest Day-Ahead Electricity Price 
+- Lowest Day-Ahead Electricity Price
 - Time Of Highest Energy Price Today
 - Time Of Lowest Energy Price Today
   
@@ -79,24 +81,36 @@ An example template is given below. You can find and share other templates [here
     {% endif %}
 {% endif %}
 ```
-### Calculation method
-This changes the calculated (min,max,avg values) entities behaviour to one of:
+### Analysis Window (previously called Calculation method)
+The analysis window defines which period to use for calculating the min,max,avg & perc values. The window can be set to:
 
+- Publish (Default)
+The min/max/etc entities will get updated once new data becomes available (usualy between 12:00 and 15:00)
+It also means that until the next days pricing becomes available the analysis is performed on the latest 48h of available data (yesterday and today)
+
+- Today
+The analysis is performed on todays data. Sensor data will be updated at midnight
+
+- Sliding-12
+An analysis window of 12 hours which moves along with the changing hour. Meaning the analysis sensors change each hour.
+The window starts 6-hours before tha last hour and ends 6 hrs after. So its using a 12 hour window to detect half-day low-/high price periods
+
+- Sliding-24
+Same as above but using a 24 hour sliding analysis window
+
+- Forward-12
+Same 12 hours sliding window, however starting from the last hour upto 12 hours beyond. Usefull to detect half-day min/max values whih occur in the future. 
+Note: being updated each hour the timestamp of sensors (like minimum price) may just change before a trigger is fired by another, even lower price, getting included in the analysis window. As such teh turning on of a device may be delayed for another 12 hours. This continues while lower prices are being announced within a 12 hour timeframe. This may be helpfull when you want to charge your EV with the lowest price being forecasted
+
+- Forward-24
+Same as above but using a 24 hour window.
+
+#### Legacy
 - Sliding
-The min/max/etc entities will get updated every hour with only upcoming data.
-This means that the min price returned at 13:00 will be the lowest price in the future (as available from that point in time).
-Regardless of past hours that might have had a lower price (this is most useful if you want to be able to schedule loads as soon and cheap as possible)
-
-- Default (on publish)
-The min/max/etc entities will get updated once new data becomes available.
-This means that the min price will update once the next days pricing becomes available (usually between 12:00 and 15:00)
-It also means that until the next days pricing becomes available the latest 48h of available data will be used to calculate a min price
+Replaced by 'forward-24'
 
 - Rotation
-The min/max/etc entities will get updated at midnight.
-This means that the min price returned at 23:59 will  be based on the day x price while at 00:00 the day x+1 price will be the only one used in the calculations)
-day x in this case is a random date like 2022-10-10 and day x+1 2022-10-11
-
+Replaced by 'Today'
 
 ### ApexChart Graph
 Prices can be shown using the [ApexChart Graph Card](https://github.com/RomRider/apexcharts-card) like in the example above. The Lovelace code for this graph is given below:

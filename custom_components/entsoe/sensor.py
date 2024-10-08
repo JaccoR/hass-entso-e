@@ -224,13 +224,10 @@ class EntsoeSensor(CoordinatorEntity, RestoreSensor):
             utcnow().replace(minute=0, second=0) + timedelta(hours=1),
         )
 
-        # ensure the calculated data is refreshed by the changing hour
-        self.coordinator.sync_calculator()
+        # ensure the analysis is refreshed by the changing hour
+        self.coordinator.refresh_analysis()
 
-        if (
-            self.coordinator.data is not None
-            and self.coordinator.today_data_available()
-        ):
+        if self.coordinator.data is not None:
             value: Any = None
             try:
                 # _LOGGER.debug(f"current coordinator.data value: {self.coordinator.data}")

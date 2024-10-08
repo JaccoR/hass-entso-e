@@ -85,6 +85,8 @@ An example template is given below. You can find and share other templates [here
 ### Analysis Window (previously called Calculation method)
 The analysis window defines which period to use for calculating the min,max,avg & perc values. 
 
+![image](https://github.com/user-attachments/assets/c7978e26-1fa9-417b-9e2f-830f8b4ccd1f)
+
 The analysis window can be set to:
 
 - Publish (Default)
@@ -109,7 +111,7 @@ Same as above but using a 24 hour sliding analysis window
 
 Same 12 hours sliding window, however starting from the last hour upto 12 hours beyond. Usefull to detect half-day min/max values whih occur in the future. 
 
-Note: being updated each hour the timestamp of sensors (like minimum price) may just change before a trigger is fired by another, even lower price, getting included in the analysis window. As such teh turning on of a device may be delayed for another 12 hours. This continues while lower prices are being announced within a 12 hour timeframe. This may be helpfull when you want to charge your EV with the lowest price being forecasted
+Note: being updated each hour the values may just change before a trigger is fired and as such not fire it. For example the timestamp of the minum price may just be set to a later date, jsut before you thought it would trigger an event. This may be caused by another lower minum getting included in the shifted analysis window. This may continue to happen while lower prices are being announced within a 12 hour timeframe. This may still be helpfull when you want to charge your EV with the lowest price being forecasted
 
 - Forward-24
 

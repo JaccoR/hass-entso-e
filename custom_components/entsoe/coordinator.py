@@ -127,7 +127,10 @@ class EntsoeCoordinator(DataUpdateCoordinator):
                 f"received pricing data from entso-e for {len(data)} hours"
             )
             self.data = parsed_data
-            self.filtered_hourprices = self._filter_analysis_window(parsed_data)
+            self.last_analysis = (
+                None  # data was updated so force a refresh of the analysis
+            )
+            self.refresh_analysis()
             return parsed_data
 
     # ENTSO: check if we need to refresh the data. If we have None, or less than 20hrs for today, or less than 20hrs tomorrow and its after 11
@@ -259,9 +262,11 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         last_hour = dt.now().replace(minute=0, second=0, microsecond=0)
 
         if self.analysis_window == ANALYSIS_WINDOW["today"]:
-            self.logger.debug(f"Filter dataset for prices today -> refresh each day")
             start = self.today
             end = start + timedelta(days=1)
+            self.logger.debug(
+                f"Filter dataset for prices today {start} - {end} -> refresh each day"
+            )
 
         elif self.analysis_window == ANALYSIS_WINDOW["sliding-24"]:
             start = last_hour - timedelta(hours=12)
@@ -293,7 +298,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
 
         else:  # self.analysis_window == ANALYSIS_WINDOW["publish"]:
             self.logger.debug(
-                f"Do not filter the dataset, use the 48hrs dataset as retrieved"
+                f"Window is set to {self.analysis_window} and therefore we use the 48hrs dataset"
             )
             return self.get_48hrs_data()
 

@@ -10,11 +10,11 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.typing import ConfigType
 
 from .const import (
-    CALCULATION_MODE,
+    ANALYSIS_WINDOW,
     CONF_API_KEY,
     CONF_AREA,
     CONF_ENERGY_SCALE,
-    CONF_CALCULATION_MODE,
+    CONF_ANALYSIS_WINDOW,
     CONF_MODIFYER,
     CONF_VAT_VALUE,
     DEFAULT_MODIFYER,
@@ -45,8 +45,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     energy_scale = entry.options.get(CONF_ENERGY_SCALE, DEFAULT_ENERGY_SCALE)
     modifyer = entry.options.get(CONF_MODIFYER, DEFAULT_MODIFYER)
     vat = entry.options.get(CONF_VAT_VALUE, 0)
-    calculation_mode = entry.options.get(
-        CONF_CALCULATION_MODE, CALCULATION_MODE["default"]
+    analysis_window = entry.options.get(
+        CONF_ANALYSIS_WINDOW, ANALYSIS_WINDOW["default"]
     )
     entsoe_coordinator = EntsoeCoordinator(
         hass,
@@ -54,7 +54,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         area=area,
         energy_scale=energy_scale,
         modifyer=modifyer,
-        calculation_mode=calculation_mode,
+        analysis_window=analysis_window,
         VAT=vat,
     )
 

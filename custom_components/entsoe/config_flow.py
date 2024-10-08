@@ -21,12 +21,12 @@ from homeassistant.helpers.template import Template
 
 from .const import (
     AREA_INFO,
-    CALCULATION_MODE,
+    ANALYSIS_WINDOW,
     COMPONENT_TITLE,
     CONF_ADVANCED_OPTIONS,
     CONF_API_KEY,
     CONF_AREA,
-    CONF_CALCULATION_MODE,
+    CONF_ANALYSIS_WINDOW,
     CONF_CURRENCY,
     CONF_ENERGY_SCALE,
     CONF_ENTITY_NAME,
@@ -94,7 +94,7 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
                 user_input[CONF_MODIFYER] = DEFAULT_MODIFYER
                 user_input[CONF_CURRENCY] = DEFAULT_CURRENCY
                 user_input[CONF_ENERGY_SCALE] = DEFAULT_ENERGY_SCALE
-                user_input[CONF_CALCULATION_MODE] = CALCULATION_MODE["default"]
+                user_input[CONF_ANALYSIS_WINDOW] = ANALYSIS_WINDOW["default"]
 
                 return self.async_create_entry(
                     title=self.name or COMPONENT_TITLE,
@@ -108,7 +108,7 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
                         CONF_ADVANCED_OPTIONS: user_input[CONF_ADVANCED_OPTIONS],
                         CONF_VAT_VALUE: user_input[CONF_VAT_VALUE],
                         CONF_ENTITY_NAME: user_input[CONF_ENTITY_NAME],
-                        CONF_CALCULATION_MODE: user_input[CONF_CALCULATION_MODE],
+                        CONF_ANALYSIS_WINDOW: user_input[CONF_ANALYSIS_WINDOW],
                     },
                 )
 
@@ -185,8 +185,8 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
                                 CONF_ENERGY_SCALE: user_input[CONF_ENERGY_SCALE],
                                 CONF_VAT_VALUE: user_input[CONF_VAT_VALUE],
                                 CONF_ENTITY_NAME: user_input[CONF_ENTITY_NAME],
-                                CONF_CALCULATION_MODE: user_input[
-                                    CONF_CALCULATION_MODE
+                                CONF_ANALYSIS_WINDOW: user_input[
+                                    CONF_ANALYSIS_WINDOW
                                 ],
                             },
                         )
@@ -212,12 +212,12 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
                         CONF_ENERGY_SCALE, default=DEFAULT_ENERGY_SCALE
                     ): vol.In(list(ENERGY_SCALES.keys())),
                     vol.Optional(
-                        CONF_CALCULATION_MODE, default=CALCULATION_MODE["default"]
+                        CONF_ANALYSIS_WINDOW, default=ANALYSIS_WINDOW["default"]
                     ): SelectSelector(
                         SelectSelectorConfig(
                             options=[
                                 SelectOptionDict(value=value, label=key)
-                                for key, value in CALCULATION_MODE.items()
+                                for key, value in ANALYSIS_WINDOW.items()
                                 if key != "default"
                             ]
                         ),
@@ -286,7 +286,7 @@ class EntsoeOptionFlowHandler(OptionsFlow):
                 errors["base"] = "invalid_template"
 
         calculation_mode_default = self.config_entry.options.get(
-            CONF_CALCULATION_MODE, CALCULATION_MODE["default"]
+            CONF_ANALYSIS_WINDOW, ANALYSIS_WINDOW["default"]
         )
 
         return self.async_show_form(
@@ -328,13 +328,13 @@ class EntsoeOptionFlowHandler(OptionsFlow):
                         ),
                     ): vol.In(list(ENERGY_SCALES.keys())),
                     vol.Optional(
-                        CONF_CALCULATION_MODE,
+                        CONF_ANALYSIS_WINDOW,
                         default=calculation_mode_default,
                     ): SelectSelector(
                         SelectSelectorConfig(
                             options=[
                                 SelectOptionDict(value=value, label=key)
-                                for key, value in CALCULATION_MODE.items()
+                                for key, value in ANALYSIS_WINDOW.items()
                                 if key != "default"
                             ]
                         ),

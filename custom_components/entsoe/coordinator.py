@@ -239,10 +239,17 @@ class EntsoeCoordinator(DataUpdateCoordinator):
     # we could still optimize as not every calculator mode needs hourly updates
     def sync_calculator(self):
         now = dt.now()
-        if self.calculator_last_sync is None or self.calculator_last_sync.hour != now.hour:
-            self.logger.debug(f"The calculator needs to be synced with the current time")
+        if (
+            self.calculator_last_sync is None 
+            or self.calculator_last_sync.hour != now.hour
+        ):
+            self.logger.debug(
+                f"The calculator needs to be synced with the current time"
+            )
             if self.today.date() != now.date():
-                self.logger.debug(f"new day detected: update today and filtered hourprices")
+                self.logger.debug(
+                    f"new day detected: update today and filtered hourprices"
+                )
                 self.today = now.replace(hour=0, minute=0, second=0, microsecond=0)
             self.filtered_hourprices = self._filter_calculated_hourprices(self.data)
 

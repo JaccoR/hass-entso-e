@@ -185,12 +185,15 @@ class EntsoeCoordinator(DataUpdateCoordinator):
     # -> until we obtain tomorrow's data we only have 48hrs of data (of yesterday and today)
     # -> after ~13:00 we will be back to 72hrs of cached data
     def get_48hrs_data(self):
-        start = self.today                  # default we return 48hrs starting today
-        if len(self.data) <= 48:
-            start -= timedelta(days=1)      # unless we dont have tomorrows data, then we start yesterday
+        today = self.get_data_today()
+        tommorrow = self.get_data_tomorrow()
 
-        return {hour: price for hour, price in self.data.items() if hour >= start}
+        if len(tommorrow) < MIN_HOURS:
+            yesterday = self.get_data_yesterday()
+            return {**yesterday, **today }
         
+        return {**today, **tommorrow}
+            
     # ENTSO: Return the data for today
     def get_data_today(self):
         return self.get_data(self.today)
@@ -214,15 +217,19 @@ class EntsoeCoordinator(DataUpdateCoordinator):
             dt.now().replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
         ]
 
-    # SENSOR: Get timestamped prices of today as attribute for Average Sensor
+    # SENSOR: Get timestamped prices of today
     def get_prices_today(self):
         return self.get_timestamped_prices(self.get_data_today())
 
-    # SENSOR: Get timestamped prices of tomorrow as attribute for Average Sensor
+    # SENSOR: Get timestamped prices of tomorrow
     def get_prices_tomorrow(self):
         return self.get_timestamped_prices(self.get_data_tomorrow())
 
-    # SENSOR: Get timestamped 48hrs prices as attribute for Average Sensor
+    # SENSOR: Get timestamped prices of yesterday
+    def get_prices_yesterday(self):
+        return self.get_timestamped_prices(self.get_data_yesterday())
+
+    # SENSOR: Get timestamped 48hrs prices
     def get_prices(self):
         return self.get_timestamped_prices(self.get_48hrs_data())
 

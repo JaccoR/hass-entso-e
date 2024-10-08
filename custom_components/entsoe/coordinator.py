@@ -255,7 +255,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
 
     # ANALYSIS: filter the hourprices on which to apply the calculations based on the calculation_mode
     def _filter_calculated_hourprices(self, data):
-        if self.calculation_mode == CALCULATION_MODE["daily"]:
+        if self.calculation_mode == CALCULATION_MODE["today"]:
             self.logger.debug(f"Filter dataset for prices today -> refresh each day")
             return {
                 hour: price
@@ -263,7 +263,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
                 if hour >= self.today and hour < self.today + timedelta(days=1)
             }
 
-        elif self.calculation_mode == CALCULATION_MODE["sliding"]:
+        elif self.calculation_mode == CALCULATION_MODE["sliding-24"]:
             start = dt.now().replace(minute=0, second=0, microsecond=0)
             start -= timedelta(hours=12)
             end = start + timedelta(hours=24)
@@ -281,7 +281,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
             )
             return {hour: price for hour, price in data.items() if start < hour < end}
 
-        elif self.calculation_mode == CALCULATION_MODE["forward"]:
+        elif self.calculation_mode == CALCULATION_MODE["forward-24"]:
             start = dt.now().replace(minute=0, second=0, microsecond=0)
             end = start + timedelta(hours=24)
             self.logger.debug(

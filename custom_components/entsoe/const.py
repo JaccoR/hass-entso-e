@@ -21,13 +21,13 @@ DEFAULT_ENERGY_SCALE = "kWh"
 
 # default is only for internal use / backwards compatibility
 CALCULATION_MODE = {
-    "default":      "publish",
-    "publish":      "publish",       
-    "daily":        "daily",         
-    "sliding":      "sliding",       
+    "default":      "published",
+    "published":    "published",       
+    "today":        "today",         
+    "sliding-24":   "sliding-24",
     "sliding-12":   "sliding-12",   # new half day sliding
-    "forward":      "forward",     # 24hrs forward looking
-    "forward-12":   "forward-12",  # 12hrs forward looking
+    "forward-24":   "forward-24",   # 24hrs forward looking
+    "forward-12":   "forward-12",   # 12hrs forward looking
 }
 
 ENERGY_SCALES = { "kWh": 1000, "MWh": 1 }

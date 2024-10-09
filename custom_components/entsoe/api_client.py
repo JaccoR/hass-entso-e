@@ -83,7 +83,7 @@ class EntsoeClient:
     # lets process the received document
     def parse_price_document(self, document: str) -> str:
 
-        root = self._remove_namespace(ET.fromstring(response.content))
+        root = self._remove_namespace(ET.fromstring(document))
         _LOGGER.debug(f"content: {root}")
         series = {}
 

@@ -111,15 +111,16 @@ Same as above but using a 24 hour sliding analysis window
 
 Same 12 hours sliding window, however starting from the last hour upto 12 hours beyond. Usefull to detect half-day min/max values whih occur in the future. 
 
-Note: being updated each hour the values may just change before a trigger is fired and as such not fire it. For example the timestamp of the minum price may just be set to a later date, jsut before you thought it would trigger an event. This may be caused by another lower minum getting included in the shifted analysis window. This may continue to happen while lower prices are being announced within a 12 hour timeframe. This may still be helpfull when you want to charge your EV with the lowest price being forecasted
+Note that because the sensors are updated each hour, the values may change just before you would expect a trigger to be fired. For example the timestamp of the minimum price may change to a later date when the analysis window shifts one hour and by this got another lower minimum price, included in the dataset. This situation may continue while lower prices keep on turning up in future hours while shifting the window. It may however help you to charge your EV at the lowest price in the comming days
 
 - Forward-24
 
 Same as above but using a 24 hour window.
 
-- Sliding depricated. Please use 'forward-24'
+Depricated
+- Sliding. Please use 'forward-24'
 
-- Rotation depricated. Please use 'Today'
+- Rotation. Please use 'Today'
 
 
 

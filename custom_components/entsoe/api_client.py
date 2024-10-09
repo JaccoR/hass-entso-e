@@ -74,48 +74,54 @@ class EntsoeClient:
                 _LOGGER.debug(f"content: {root}")
                 series = {}
 
-                # Extract TimeSeries data
-                for timeseries in root.findall(".//TimeSeries"):
-                    for period in timeseries.findall(".//Period"):
-                        resolution = period.find(".//resolution").text
+                # Just pick the first TimeSeries data (DE casus in which multiple alternative answers are given)
+                # TODO: verify if the periods in the timeseries really overlap and serve as alternative response
+                # TODO: find the most suitable timeseries instead of just the first
+                timeseries = root.find(".//TimeSeries")
 
-                        if resolution == "PT60M" or resolution == "PT1H":
-                            resolution = "PT60M"
-                        elif resolution != "PT15M":
-                            continue
+                # for all periods in this timeseries.....-> we still asume the time intervals do not overlap, and are in sequence
+                for period in timeseries.findall(".//Period"):
+                    # there can be different resolutions for each period (BE casus in which historical is quarterly and future is hourly)
+                    resolution = period.find(".//resolution").text
 
-                        response_start = period.find(".//timeInterval/start").text
-                        start_time = (
-                            datetime.strptime(response_start, "%Y-%m-%dT%H:%MZ")
-                            .replace(tzinfo=pytz.UTC)
-                            .astimezone()
-                        )
-                        start_time.replace(minute=0)    # ensure we start from the whole hour
+                    # for now supporting 60 and 15 minutes resolutions
+                    if resolution == "PT60M" or resolution == "PT1H":
+                        resolution = "PT60M"
+                    elif resolution != "PT15M":
+                        continue
 
-                        response_end = period.find(".//timeInterval/end").text
-                        end_time = (
-                            datetime.strptime(response_end, "%Y-%m-%dT%H:%MZ")
-                            .replace(tzinfo=pytz.UTC)
-                            .astimezone()
-                        )
-                        _LOGGER.debug(f"Period found is from {start_time} till {end_time}")
+                    response_start = period.find(".//timeInterval/start").text
+                    start_time = (
+                        datetime.strptime(response_start, "%Y-%m-%dT%H:%MZ")
+                        .replace(tzinfo=pytz.UTC)
+                        .astimezone()
+                    )
+                    start_time.replace(minute=0)    # ensure we start from the whole hour
 
-                        if resolution == "PT60M":
-                            series = self.process_PT60M_points(period, start_time)
+                    response_end = period.find(".//timeInterval/end").text
+                    end_time = (
+                        datetime.strptime(response_end, "%Y-%m-%dT%H:%MZ")
+                        .replace(tzinfo=pytz.UTC)
+                        .astimezone()
+                    )
+                    _LOGGER.debug(f"Period found is from {start_time} till {end_time} with resolution {resolution}")
+
+                    if resolution == "PT60M":
+                        series = self.process_PT60M_points(period, start_time)
+                    else:
+                        series = self.process_PT15M_points(period, start_time)
+
+                    # Now fill in any missing hours 
+                    current_time = start_time
+                    last_price = series[current_time]
+
+                    while current_time < end_time:             # upto excluding! the endtime
+                        if current_time in series:
+                            last_price = series[current_time]  # Update to the current price
                         else:
-                            series = self.process_PT15M_points(period, start_time)
-
-                        # Now fill in any missing hours 
-                        current_time = start_time
-                        last_price = series[current_time]
-
-                        while current_time < end_time:             # upto excluding! the endtime
-                            if current_time in series:
-                                last_price = series[current_time]  # Update to the current price
-                            else:
-                                _LOGGER.debug(f"Extending the price {last_price} of the previous hour to {current_time}")
-                                series[current_time] = last_price  # Fill with the last known price
-                            current_time += timedelta(hours=1)
+                            _LOGGER.debug(f"Extending the price {last_price} of the previous hour to {current_time}")
+                            series[current_time] = last_price  # Fill with the last known price
+                        current_time += timedelta(hours=1)
 
                 return dict(sorted(series.items()))
 
@@ -126,7 +132,7 @@ class EntsoeClient:
             print(f"Failed to retrieve data: {response.status_code}")
             return None
 
-    # processing hourly prices info
+    # processing hourly prices info -> thats easy
     def process_PT60M_points(self, period: Element, start_time: datetime):
         data = {}
         for point in period.findall(".//Point"):
@@ -137,41 +143,32 @@ class EntsoeClient:
             data[time] = float(price)
         return data
 
-    # processing quarterly prices
+    # processing quarterly prices -> this is more complex
     def process_PT15M_points(self, period: Element, start_time: datetime):
         positions = {}
+
         # first store all positions       
         for point in period.findall(".//Point"):
             position = point.find(".//position").text
             price = point.find(".//price.amount").text
             positions[int(position)] = float(price)
 
-        # find the last position and add quarters to fill upto the hour        
-        last = max(positions.keys)
-        remaining = last % 4
-        if (remaining != 0):
-            last += (4-remaining)
-
-        # now fill in any missing quarter values
-        last_price = positions[idx]
-        for idx in range(1, last):
-            if idx not in positions:
-                position[idx] = last_price
-            else:
-                last_price = position[idx]
-        
-        # lets now convert all these quarter values to hours
+        # now calculate hourly averages based on available points
         data = {}
-        idx = 1
-        while (idx+3 <= last):
-            avg_price = sum(
-                [positions.get(idx+1, 0), 
-                 positions.get(idx+2, 0),
-                 positions.get(idx+3, 0),
-                 positions.get(idx+4, 0)]) / 4
-            hour = idx // 4
-            time = start_time + timedelta(hours=hour)
-            data[time] = float(avg_price)
+        last_position = max(positions.keys())
+        
+        for hour in range((last_position // 4) + 1):
+            sum_prices = 0
+            count = 0
+            for idx in range(hour * 4 + 1, hour * 4 + 5):
+                if idx in positions:
+                    sum_prices += positions[idx]
+                    count += 1
+
+            if count > 0:  # only calculate average if there are prices
+                avg_price = sum_prices / count
+                time = start_time + timedelta(hours=hour)
+                data[time] = avg_price
                
         return data
 

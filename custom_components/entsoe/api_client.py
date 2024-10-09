@@ -75,8 +75,8 @@ class EntsoeClient:
                 series = {}
 
                 # Just pick the first TimeSeries data (DE casus in which multiple alternative answers are given)
-                # TODO: verify if the periods in the timeseries really overlap and serve as alternative response
-                # TODO: find the most suitable timeseries instead of just the first
+                # We could/should verify if the periods in the timeseries really overlap and serve as alternative response
+                # and we could/should find the most suitable timeseries instead of just the first
                 timeseries = root.find(".//TimeSeries")
 
                 # for all periods in this timeseries.....-> we still asume the time intervals do not overlap, and are in sequence
@@ -84,7 +84,7 @@ class EntsoeClient:
                     # there can be different resolutions for each period (BE casus in which historical is quarterly and future is hourly)
                     resolution = period.find(".//resolution").text
 
-                    # for now supporting 60 and 15 minutes resolutions
+                    # for now supporting 60 and 15 minutes resolutions (ISO8601 defined)
                     if resolution == "PT60M" or resolution == "PT1H":
                         resolution = "PT60M"
                     elif resolution != "PT15M":
@@ -96,7 +96,7 @@ class EntsoeClient:
                         .replace(tzinfo=pytz.UTC)
                         .astimezone()
                     )
-                    start_time.replace(minute=0)    # ensure we start from the whole hour
+                    start_time.replace(minute=0)  # ensure we start from the whole hour
 
                     response_end = period.find(".//timeInterval/end").text
                     end_time = (
@@ -104,23 +104,30 @@ class EntsoeClient:
                         .replace(tzinfo=pytz.UTC)
                         .astimezone()
                     )
-                    _LOGGER.debug(f"Period found is from {start_time} till {end_time} with resolution {resolution}")
-
+                    _LOGGER.debug(
+                        f"Period found is from {start_time} till {end_time} with resolution {resolution}"
+                    )
                     if resolution == "PT60M":
                         series.update(self.process_PT60M_points(period, start_time))
                     else:
                         series.update(self.process_PT15M_points(period, start_time))
 
-                    # Now fill in any missing hours 
+                    # Now fill in any missing hours
                     current_time = start_time
                     last_price = series[current_time]
 
-                    while current_time < end_time:             # upto excluding! the endtime
+                    while current_time < end_time:  # upto excluding! the endtime
                         if current_time in series:
-                            last_price = series[current_time]  # Update to the current price
+                            last_price = series[
+                                current_time
+                            ]  # Update to the current price
                         else:
-                            _LOGGER.debug(f"Extending the price {last_price} of the previous hour to {current_time}")
-                            series[current_time] = last_price  # Fill with the last known price
+                            _LOGGER.debug(
+                                f"Extending the price {last_price} of the previous hour to {current_time}"
+                            )
+                            series[current_time] = (
+                                last_price  # Fill with the last known price
+                            )
                         current_time += timedelta(hours=1)
 
                 return dict(sorted(series.items()))
@@ -147,7 +154,7 @@ class EntsoeClient:
     def process_PT15M_points(self, period: Element, start_time: datetime):
         positions = {}
 
-        # first store all positions       
+        # first store all positions
         for point in period.findall(".//Point"):
             position = point.find(".//position").text
             price = point.find(".//price.amount").text
@@ -156,7 +163,7 @@ class EntsoeClient:
         # now calculate hourly averages based on available points
         data = {}
         last_position = max(positions.keys())
-        
+
         for hour in range((last_position // 4) + 1):
             sum_prices = 0
             count = 0
@@ -169,8 +176,9 @@ class EntsoeClient:
                 avg_price = sum_prices / count
                 time = start_time + timedelta(hours=hour)
                 data[time] = avg_price
-               
+
         return data
+
 
 class Area(enum.Enum):
     """

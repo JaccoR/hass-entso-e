@@ -165,19 +165,16 @@ class EntsoeClient:
         # now calculate hourly averages based on available points
         data = {}
         last_position = max(positions.keys())
+        last_price = positions.get(0, 0)
 
         for hour in range((last_position // 4) + 1):
             sum_prices = 0
-            count = 0
             for idx in range(hour * 4 + 1, hour * 4 + 5):
-                if idx in positions:
-                    sum_prices += positions[idx]
-                    count += 1
+                last_price = positions.get(idx, last_price)
+                sum_prices += last_price
 
-            if count > 0:  # only calculate average if there are prices
-                avg_price = sum_prices / count
-                time = start_time + timedelta(hours=hour)
-                data[time] = avg_price
+            time = start_time + timedelta(hours=hour)
+            data[time] = round(sum_prices / 4, 2)
 
         return data
 

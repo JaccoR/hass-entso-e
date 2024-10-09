@@ -139,6 +139,69 @@ class TestDocumentParsing(unittest.TestCase):
             },
         )
 
+    def test_de_60m_15m_overlap(self):
+        with open("./datasets/DE_60M_15M_overlap.xml") as f:
+            data = f.read()
+
+        self.maxDiff = None
+        self.assertDictEqual(
+            self.client.parse_price_document(data),
+            {
+                # part 1 - 60M resolution
+                datetime.fromisoformat("2024-10-05T22:00:00Z"): 67.04,
+                datetime.fromisoformat("2024-10-05T23:00:00Z"): 63.97,
+                datetime.fromisoformat("2024-10-06T00:00:00Z"): 62.83,
+                datetime.fromisoformat("2024-10-06T01:00:00Z"): 63.35,
+                datetime.fromisoformat("2024-10-06T02:00:00Z"): 62.71,
+                datetime.fromisoformat("2024-10-06T03:00:00Z"): 63.97,
+                datetime.fromisoformat("2024-10-06T04:00:00Z"): 63.41,
+                datetime.fromisoformat("2024-10-06T05:00:00Z"): 72.81,
+                datetime.fromisoformat("2024-10-06T06:00:00Z"): 77.2,
+                datetime.fromisoformat("2024-10-06T07:00:00Z"): 66.06,
+                datetime.fromisoformat("2024-10-06T08:00:00Z"): 35.28,
+                datetime.fromisoformat("2024-10-06T09:00:00Z"): 16.68,
+                datetime.fromisoformat("2024-10-06T10:00:00Z"): 5.25,
+                datetime.fromisoformat("2024-10-06T11:00:00Z"): -0.01,
+                datetime.fromisoformat(
+                    "2024-10-06T12:00:00Z"
+                ): -0.01,  # repeated value, not present in the dataset!
+                datetime.fromisoformat("2024-10-06T13:00:00Z"): 0.2,
+                datetime.fromisoformat("2024-10-06T14:00:00Z"): 59.6,
+                datetime.fromisoformat("2024-10-06T15:00:00Z"): 90.94,
+                datetime.fromisoformat("2024-10-06T16:00:00Z"): 106.3,
+                datetime.fromisoformat("2024-10-06T17:00:00Z"): 97.22,
+                datetime.fromisoformat("2024-10-06T18:00:00Z"): 72.98,
+                datetime.fromisoformat("2024-10-06T19:00:00Z"): 59.37,
+                datetime.fromisoformat("2024-10-06T20:00:00Z"): 58.69,
+                datetime.fromisoformat("2024-10-06T21:00:00Z"): 51.71,
+                # part 2 - 60M resolution
+                datetime.fromisoformat("2024-10-06T22:00:00Z"): 34.58,
+                datetime.fromisoformat("2024-10-06T23:00:00Z"): 35.34,
+                datetime.fromisoformat("2024-10-07T00:00:00Z"): 33.25,
+                datetime.fromisoformat("2024-10-07T01:00:00Z"): 30.15,
+                datetime.fromisoformat("2024-10-07T02:00:00Z"): 36.09,
+                datetime.fromisoformat("2024-10-07T03:00:00Z"): 46.73,
+                datetime.fromisoformat("2024-10-07T04:00:00Z"): 67.59,
+                datetime.fromisoformat("2024-10-07T05:00:00Z"): 100.92,
+                datetime.fromisoformat("2024-10-07T06:00:00Z"): 108.32,
+                datetime.fromisoformat("2024-10-07T07:00:00Z"): 91.86,
+                datetime.fromisoformat("2024-10-07T08:00:00Z"): 66.09,
+                datetime.fromisoformat("2024-10-07T09:00:00Z"): 60.22,
+                datetime.fromisoformat("2024-10-07T10:00:00Z"): 54.11,
+                datetime.fromisoformat("2024-10-07T11:00:00Z"): 43.29,
+                datetime.fromisoformat("2024-10-07T12:00:00Z"): 55,
+                datetime.fromisoformat("2024-10-07T13:00:00Z"): 67.01,
+                datetime.fromisoformat("2024-10-07T14:00:00Z"): 97.9,
+                datetime.fromisoformat("2024-10-07T15:00:00Z"): 120.71,
+                datetime.fromisoformat("2024-10-07T16:00:00Z"): 237.65,
+                datetime.fromisoformat("2024-10-07T17:00:00Z"): 229.53,
+                datetime.fromisoformat("2024-10-07T18:00:00Z"): 121.98,
+                datetime.fromisoformat("2024-10-07T19:00:00Z"): 99.93,
+                datetime.fromisoformat("2024-10-07T20:00:00Z"): 91.91,
+                datetime.fromisoformat("2024-10-07T21:00:00Z"): 79.12,
+            },
+        )
+
     def test_be_15M_avg(self):
         with open("./datasets/BE_15M_avg.xml") as f:
             data = f.read()
@@ -148,11 +211,11 @@ class TestDocumentParsing(unittest.TestCase):
             self.client.parse_price_document(data),
             {
                 # part 1 - 15M resolution
-                datetime.fromisoformat("2024-10-05T22:00:00Z"): 39.06,  # average on 4
-                datetime.fromisoformat("2024-10-05T23:00:00Z"): 44.22,  # average on 1
-                datetime.fromisoformat("2024-10-06T00:00:00Z"): 36.30,  # average on 2
-                datetime.fromisoformat("2024-10-06T01:00:00Z"): 36.30,  # extended till
-                datetime.fromisoformat("2024-10-06T02:00:00Z"): 36.30,  # extended till
+                datetime.fromisoformat("2024-10-05T22:00:00Z"): 39.06,  # average
+                datetime.fromisoformat("2024-10-05T23:00:00Z"): 44.22,  # average
+                datetime.fromisoformat("2024-10-06T00:00:00Z"): 36.30,  # average
+                datetime.fromisoformat("2024-10-06T01:00:00Z"): 36.30,  # extended
+                datetime.fromisoformat("2024-10-06T02:00:00Z"): 36.30,  # extended
                 # part 2 - 60M resolution
                 datetime.fromisoformat("2024-10-06T03:00:00Z"): 64.98,
                 datetime.fromisoformat("2024-10-06T04:00:00Z"): 64.98,  # extended

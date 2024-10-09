@@ -107,9 +107,9 @@ class EntsoeClient:
                     _LOGGER.debug(f"Period found is from {start_time} till {end_time} with resolution {resolution}")
 
                     if resolution == "PT60M":
-                        series = self.process_PT60M_points(period, start_time)
+                        series.update(self.process_PT60M_points(period, start_time))
                     else:
-                        series = self.process_PT15M_points(period, start_time)
+                        series.update(self.process_PT15M_points(period, start_time))
 
                     # Now fill in any missing hours 
                     current_time = start_time

@@ -17,9 +17,7 @@ from .const import AREA_INFO, CALCULATION_MODE, DEFAULT_MODIFYER, ENERGY_SCALES
 # depending on timezone les than 24 hours could be returned.
 MIN_HOURS = 20
 
-# This class contains actually two main tasks
-# 1. ENTSO: Refresh data from ENTSO on interval basis triggered by HASS every 60 minutes
-# 2. ANALYSIS:  Implement some analysis on this data, like min(), max(), avg(), perc(). Updated analysis is triggered by an explicit call from a sensor
+
 class EntsoeCoordinator(DataUpdateCoordinator):
     """Get the latest data and update the states."""
 
@@ -64,7 +62,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
             update_interval=timedelta(minutes=60),
         )
 
-    # ENTSO: recalculate the price using the given template 
+    # calculate the price using the given template
     def calc_price(self, value, fake_dt=None, no_template=False) -> float:
         """Calculate price based on the users settings."""
         # Used to inject the current hour.
@@ -92,13 +90,12 @@ class EntsoeCoordinator(DataUpdateCoordinator):
 
         return price
 
-    # ENTSO: recalculate the price for each price
     def parse_hourprices(self, hourprices):
         for hour, price in hourprices.items():
             hourprices[hour] = self.calc_price(value=price, fake_dt=hour)
         return hourprices
 
-    # ENTSO: Triggered by HA to refresh the data (interval = 60 minutes)
+    # Called by HA every refresh interval (60 minutes)
     async def _async_update_data(self) -> dict:
         """Get the latest data from ENTSO-e"""
         self.logger.debug("ENTSO-e DataUpdateCoordinator data update")
@@ -128,7 +125,6 @@ class EntsoeCoordinator(DataUpdateCoordinator):
             self.filtered_hourprices = self._filter_calculated_hourprices(parsed_data)
             return parsed_data
 
-    # ENTSO: check if we need to refresh the data. If we have None, or less than 20hrs left for today, or less than 20hrs tomorrow and its after 11
     def check_update_needed(self, now):
         if self.data is None:
             return True
@@ -138,7 +134,6 @@ class EntsoeCoordinator(DataUpdateCoordinator):
             return True
         return False
 
-    # ENTSO: new prices using an async job
     async def fetch_prices(self, start_date, end_date):
         try:
             # run api_update in async job
@@ -166,89 +161,49 @@ class EntsoeCoordinator(DataUpdateCoordinator):
                     f"Warning the integration doesn't have any up to date local data this means that entities won't get updated but access remains to restorable entities: {exc}."
                 )
 
-    # ENTSO: the async fetch job itself
     def api_update(self, start_date, end_date, api_key):
         client = EntsoeClient(api_key=api_key)
         return client.query_day_ahead_prices(
             country_code=self.area, start=start_date, end=end_date
         )
-    
-    # ENTSO: Return the data for the given date
-    def get_data(self, date):
-        return {k: v for k, v in self.data.items() if k.date() == date.date()}
 
-    # ENTSO: Return the data for today
-    def get_data_today(self):
-        return self.get_data(self.today)
+    async def get_energy_prices(self, start_date, end_date):
+        # check if we have the data already
+        if (
+            len(self.get_data(start_date)) > MIN_HOURS
+            and len(self.get_data(end_date)) > MIN_HOURS
+        ):
+            self.logger.debug(f"return prices from coordinator cache.")
+            return {
+                k: v
+                for k, v in self.data.items()
+                if k.date() >= start_date.date() and k.date() <= end_date.date()
+            }
+        return self.parse_hourprices(await self.fetch_prices(start_date, end_date))
 
-    # ENTSO: Return the data for tomorrow
-    def get_data_tomorrow(self):
-        return self.get_data(self.today + timedelta(days=1))
-
-    # ENTSO: Return the data for yesterday
-    def get_data_yesterday(self):
-        return self.get_data(self.today - timedelta(days=1))
-
-    # SENSOR: Do we have data available for today TODO: remove
     def today_data_available(self):
         return len(self.get_data_today()) > MIN_HOURS
-    
-    # SENSOR: Get the current price
-    def get_current_hourprice(self) -> int:
-        return self.data[dt.now().replace(minute=0, second=0, microsecond=0)]
 
-    # SENSOR: Get the next hour price
-    def get_next_hourprice(self) -> int:
-        return self.data[
-            dt.now().replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
-        ]
-
-    # SENSOR: Get timestamped prices of today as attribute for Average Sensor
-    def get_prices_today(self):
-        return self.get_timestamped_prices(self.get_data_today())
-
-    # SENSOR: Get timestamped prices of tomorrow as attribute for Average Sensor
-    def get_prices_tomorrow(self):
-        return self.get_timestamped_prices(self.get_data_tomorrow())
-
-    # SENSOR: Get timestamped prices of today & tomorrow or yesterday & today as attribute for Average Sensor
-    # TODO: why is there another logic when data is below 48 hrs and does this ever happen? 
-    def get_prices(self):
-        if len(self.data) > 48:
-            return self.get_timestamped_prices(
-                {hour: price for hour, price in self.data.items() if hour >= self.today}
-            )
-        return self.get_timestamped_prices(
-            {
-                hour: price
-                for hour, price in self.data.items()
-                if hour >= self.today - timedelta(days=1)
-            }
-        )
-
-    # SENSOR: Timestamp the prices
-    def get_timestamped_prices(self, hourprices):
-        list = []
-        for hour, price in hourprices.items():
-            str_hour = str(hour)
-            list.append({"time": str_hour, "price": price})
-        return list
-
-    # --------------------------------------------------------------------------------------------------------------------------------
-    # ANALYSIS: this method is called by each sensor, each complete hour, and ensures the date and filtered hourprices are in line with the current time
+    # this method is called by each sensor, each complete hour, and ensures the date and filtered hourprices are in line with the current time
     # we could still optimize as not every calculator mode needs hourly updates
     def sync_calculator(self):
         now = dt.now()
-        if self.calculator_last_sync is None or self.calculator_last_sync.hour != now.hour:
-            self.logger.debug(f"The calculator needs to be synced with the current time")
+        if (
+            self.calculator_last_sync is None
+            or self.calculator_last_sync.hour != now.hour
+        ):
+            self.logger.debug(
+                f"The calculator needs to be synced with the current time"
+            )
             if self.today.date() != now.date():
-                self.logger.debug(f"new day detected: update today and filtered hourprices")
+                self.logger.debug(
+                    f"new day detected: update today and filtered hourprices"
+                )
                 self.today = now.replace(hour=0, minute=0, second=0, microsecond=0)
             self.filtered_hourprices = self._filter_calculated_hourprices(self.data)
 
-        self.calculator_last_sync  = now
+        self.calculator_last_sync = now
 
-    # ANALYSIS: filter the hourprices on which to apply the calculations based on the calculation_mode 
     def _filter_calculated_hourprices(self, data):
         # rotation = calculations made upon 24hrs today
         if self.calculation_mode == CALCULATION_MODE["rotation"]:
@@ -264,7 +219,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         # publish >48 hrs of data = calculations made on all data of today and tomorrow (48 hrs)
         elif self.calculation_mode == CALCULATION_MODE["publish"] and len(data) > 48:
             return {hour: price for hour, price in data.items() if hour >= self.today}
-        # publish <=48 hrs of data = calculations made on all data of yesterday and today (48 hrs) 
+        # publish <=48 hrs of data = calculations made on all data of yesterday and today (48 hrs)
         elif self.calculation_mode == CALCULATION_MODE["publish"]:
             return {
                 hour: price
@@ -272,23 +227,46 @@ class EntsoeCoordinator(DataUpdateCoordinator):
                 if hour >= self.today - timedelta(days=1)
             }
 
-    # ANALYSIS: Get max price in filtered period
-    def get_max_price(self):
-        return max(self.filtered_hourprices.values())
+    def get_prices_today(self):
+        return self.get_timestamped_prices(self.get_data_today())
 
-    # ANALYSIS: Get min price in filtered period
-    def get_min_price(self):
-        return min(self.filtered_hourprices.values())
+    def get_prices_tomorrow(self):
+        return self.get_timestamped_prices(self.get_data_tomorrow())
 
-    # ANALYSIS: Get timestamp of max price in filtered period
-    def get_max_time(self):
-        return max(self.filtered_hourprices, key=self.filtered_hourprices.get)
+    def get_prices(self):
+        if len(self.data) > 48:
+            return self.get_timestamped_prices(
+                {hour: price for hour, price in self.data.items() if hour >= self.today}
+            )
+        return self.get_timestamped_prices(
+            {
+                hour: price
+                for hour, price in self.data.items()
+                if hour >= self.today - timedelta(days=1)
+            }
+        )
 
-    # ANALYSIS: Get timestamp of min price in filtered period
-    def get_min_time(self):
-        return min(self.filtered_hourprices, key=self.filtered_hourprices.get)
+    def get_data(self, date):
+        return {k: v for k, v in self.data.items() if k.date() == date.date()}
 
-    # ANALYSIS: Get avg price in filtered period
+    def get_data_today(self):
+        return {k: v for k, v in self.data.items() if k.date() == self.today.date()}
+
+    def get_data_tomorrow(self):
+        return {
+            k: v
+            for k, v in self.data.items()
+            if k.date() == self.today.date() + timedelta(days=1)
+        }
+
+    def get_next_hourprice(self) -> int:
+        return self.data[
+            dt.now().replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
+        ]
+
+    def get_current_hourprice(self) -> int:
+        return self.data[dt.now().replace(minute=0, second=0, microsecond=0)]
+
     def get_avg_price(self):
         return round(
             sum(self.filtered_hourprices.values())
@@ -296,30 +274,30 @@ class EntsoeCoordinator(DataUpdateCoordinator):
             5,
         )
 
-    # ANALYSIS: Get percentage of current price relative to maximum of filtered period
+    def get_max_price(self):
+        return max(self.filtered_hourprices.values())
+
+    def get_min_price(self):
+        return min(self.filtered_hourprices.values())
+
+    def get_max_time(self):
+        return max(self.filtered_hourprices, key=self.filtered_hourprices.get)
+
+    def get_min_time(self):
+        return min(self.filtered_hourprices, key=self.filtered_hourprices.get)
+
     def get_percentage_of_max(self):
         return round(self.get_current_hourprice() / self.get_max_price() * 100, 1)
 
-    # ANALYSIS: Get percentage of current price relative to spread (max-min) of filtered period
     def get_percentage_of_range(self):
         min = self.get_min_price()
         spread = self.get_max_price() - min
         current = self.get_current_hourprice() - min
         return round(current / spread * 100, 1)
-    
-    # --------------------------------------------------------------------------------------------------------------------------------
-    # SERVICES: returns data from the coordinator cache, or directly from ENTSO when not availble
-    # TODO: danger here for exceeding requests for huge periods suggest to limit to the 72 hrs of cached data
-    async def get_energy_prices(self, start_date, end_date):
-        # check if we have the data already
-        if (
-            len(self.get_data(start_date)) > MIN_HOURS
-            and len(self.get_data(end_date)) > MIN_HOURS
-        ):
-            self.logger.debug(f"return prices from coordinator cache.")
-            return {
-                k: v
-                for k, v in self.data.items()
-                if k.date() >= start_date.date() and k.date() <= end_date.date()
-            }
-        return self.parse_hourprices(await self.fetch_prices(start_date, end_date))
+
+    def get_timestamped_prices(self, hourprices):
+        list = []
+        for hour, price in hourprices.items():
+            str_hour = str(hour)
+            list.append({"time": str_hour, "price": price})
+        return list

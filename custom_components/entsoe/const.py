@@ -12,7 +12,7 @@ CONF_MODIFYER = "modifyer"
 CONF_CURRENCY = "currency"
 CONF_ENERGY_SCALE = "energy_scale"
 CONF_ADVANCED_OPTIONS = "advanced_options"
-CONF_CALCULATION_MODE = "calculation_mode"
+CONF_ANALYSIS_WINDOW = "analysis_window"
 CONF_VAT_VALUE = "VAT_value"
 
 DEFAULT_MODIFYER = "{{current_price}}"
@@ -20,11 +20,14 @@ DEFAULT_CURRENCY = CURRENCY_EURO
 DEFAULT_ENERGY_SCALE = "kWh"
 
 # default is only for internal use / backwards compatibility
-CALCULATION_MODE = {
-    "default": "publish",
-    "rotation": "rotation",
-    "sliding": "sliding",
-    "publish": "publish",
+ANALYSIS_WINDOW = {
+    "default":      "publish",
+    "publish":      "publish",       
+    "today":        "today",         
+    "sliding-24":   "sliding-24",
+    "sliding-12":   "sliding-12",   # new half day sliding
+    "forward-24":   "forward-24",   # 24hrs forward looking
+    "forward-12":   "forward-12",   # 12hrs forward looking
 }
 
 ENERGY_SCALES = { "kWh": 1000, "MWh": 1 }

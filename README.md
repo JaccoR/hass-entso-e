@@ -12,12 +12,15 @@ email address you entered during registration in the email body.
 
 ### Sensors
 The integration adds the following sensors:
-- Average Day-Ahead Electricity Price Today (This integration carries attributes with all prices)
-- Highest Day-Ahead Electricity Price Today
-- Lowest Day-Ahead Electricity Price Today
-- Current Day-Ahead Electricity Price
-- Current Percentage Relative To Highest Electricity Price Of The Day
-- Next Hour Day-Ahead Electricity Price
+- Current Electricity Price
+- Next Hour Electricity Price
+
+And some price analysis sensors:
+- Average Day-Ahead Electricity Price (This integration carries attributes with all prices)
+- Current Percentage Relative To Highest Electricity Price
+- Current Percentage Relative To Spread Electricity Price
+- Highest Day-Ahead Electricity Price 
+- Lowest Day-Ahead Electricity Price
 - Time Of Highest Energy Price Today
 - Time Of Lowest Energy Price Today
   
@@ -79,23 +82,46 @@ An example template is given below. You can find and share other templates [here
     {% endif %}
 {% endif %}
 ```
-### Calculation method
-This changes the calculated (min,max,avg values) entities behaviour to one of:
+### Analysis Window (previously called Calculation method)
+The analysis window defines which period to use for calculating the min,max,avg & perc values. 
 
-- Sliding
-The min/max/etc entities will get updated every hour with only upcoming data.
-This means that the min price returned at 13:00 will be the lowest price in the future (as available from that point in time).
-Regardless of past hours that might have had a lower price (this is most useful if you want to be able to schedule loads as soon and cheap as possible)
+![image](https://github.com/user-attachments/assets/c7978e26-1fa9-417b-9e2f-830f8b4ccd1f)
 
-- Default (on publish)
-The min/max/etc entities will get updated once new data becomes available.
-This means that the min price will update once the next days pricing becomes available (usually between 12:00 and 15:00)
-It also means that until the next days pricing becomes available the latest 48h of available data will be used to calculate a min price
+The analysis window can be set to:
 
-- Rotation
-The min/max/etc entities will get updated at midnight.
-This means that the min price returned at 23:59 will  be based on the day x price while at 00:00 the day x+1 price will be the only one used in the calculations)
-day x in this case is a random date like 2022-10-10 and day x+1 2022-10-11
+- Publish (Default)
+
+The min/max/etc entities will get updated once new data becomes available (usualy between 12:00 and 15:00)
+It also means that until the next days pricing becomes available the analysis is performed on the latest 48h of available data (yesterday and today)
+
+- Today
+
+The analysis is performed on todays data. Sensor data will be updated at midnight
+
+- Sliding-12
+
+An analysis window of 12 hours which moves along with the changing hour. Meaning the analysis sensors change each hour.
+The window starts 6-hours before tha last hour and ends 6 hrs after. So its using a 12 hour window to detect half-day low-/high price periods
+
+- Sliding-24
+
+Same as above but using a 24 hour sliding analysis window
+
+- Forward-12
+
+Same 12 hours sliding window, however starting from the last hour upto 12 hours beyond. Usefull to detect half-day min/max values whih occur in the future. 
+
+Note that because the sensors are updated each hour, the values may change just before you would expect a trigger to be fired. For example the timestamp of the minimum price may change to a later date when the analysis window shifts one hour and by this got another lower minimum price, included in the dataset. This situation may continue while lower prices keep on turning up in future hours while shifting the window. It may however help you to charge your EV at the lowest price in the comming days
+
+- Forward-24
+
+Same as above but using a 24 hour window.
+
+Depricated
+- Sliding. Please use 'forward-24'
+
+- Rotation. Please use 'Today'
+
 
 
 ### ApexChart Graph

@@ -70,52 +70,7 @@ class EntsoeClient:
 
         if response.status_code == 200:
             try:
-                root = self._remove_namespace(ET.fromstring(response.content))
-                _LOGGER.debug(f"content: {root}")
-                series = {}
-
-                # Extract TimeSeries data
-                for timeseries in root.findall(".//TimeSeries"):
-                    for period in timeseries.findall(".//Period"):
-                        resolution = period.find(".//resolution").text
-
-                        if resolution != "PT60M":
-                            continue
-
-                        response_start = period.find(".//timeInterval/start").text
-                        start_time = (
-                            datetime.strptime(response_start, "%Y-%m-%dT%H:%MZ")
-                            .replace(tzinfo=pytz.UTC)
-                            .astimezone()
-                        )
-
-                        response_end = period.find(".//timeInterval/end").text
-                        end_time = (
-                            datetime.strptime(response_end, "%Y-%m-%dT%H:%MZ")
-                            .replace(tzinfo=pytz.UTC)
-                            .astimezone()
-                        )
-
-                        _LOGGER.debug(f"Period found is from {start_time} till {end_time}")
-
-                        for point in period.findall(".//Point"):
-                            position = point.find(".//position").text
-                            price = point.find(".//price.amount").text
-                            hour = int(position) - 1
-                            series[start_time + timedelta(hours=hour)] = float(price)
-
-                        # Now fill in any missing hours 
-                        current_time = start_time
-                        last_price = series[current_time]
-
-                        while current_time < end_time:  # upto excluding! the endtime
-                            if current_time in series:
-                                last_price = series[current_time]  # Update to the current price
-                            else:
-                                _LOGGER.debug(f"Extending the price {last_price} of the previous hour to {current_time}")
-                                series[current_time] = last_price  # Fill with the last known price
-                            current_time += timedelta(hours=1)
-
+                series = self.parse_price_document(response.content)
                 return dict(sorted(series.items()))
 
             except Exception as exc:
@@ -125,6 +80,74 @@ class EntsoeClient:
             print(f"Failed to retrieve data: {response.status_code}")
             return None
 
+    def parse_price_document(
+            self, document: str
+    ) -> str:
+
+        # note: this function prefers hourly data over 15m interval data.
+        # if we don't get a hourly datapoint, but we have a 15m datapoint which matches, we use it
+
+        root = self._remove_namespace(ET.fromstring(document))
+        _LOGGER.debug(f"content: {root}")
+        series = {}
+        series_datasource = {}
+
+        # Extract TimeSeries data
+        for timeseries in root.findall(".//TimeSeries"):
+            for period in timeseries.findall(".//Period"):
+                resolution = period.find(".//resolution").text
+
+                if resolution == "PT60M" or resolution == "PT1H":
+                    resolution = "PT60M"
+                    delta_unit = timedelta(hours = 1)
+                elif resolution == "PT15M":
+                    # we bluntly assume we have only one datapoint per hour
+                    # todo - allow to have an aggregation function
+                    delta_unit = timedelta(minutes=15)
+                else:
+                    raise(f"Unknown resolution passed: '%s'", resolution)
+
+                response_start = period.find(".//timeInterval/start").text
+                start_time = (
+                    datetime.strptime(response_start, "%Y-%m-%dT%H:%MZ")
+                    .replace(tzinfo=pytz.UTC)
+                    .astimezone()
+                )
+
+                response_end = period.find(".//timeInterval/end").text
+                end_time = (
+                    datetime.strptime(response_end, "%Y-%m-%dT%H:%MZ")
+                    .replace(tzinfo=pytz.UTC)
+                    .astimezone()
+                )
+
+                _LOGGER.debug(f"Period found is from {start_time} till {end_time}")
+
+                for point in period.findall(".//Point"):
+                    position = int(point.find(".//position").text)
+                    if resolution == "PT15M" and (position - 1) % 4: # not interested in non-full-hour-datapoints
+                        continue
+                    price = point.find(".//price.amount").text
+                    key = start_time + (position - 1) * delta_unit
+
+                    # only write if we don't have a 60m data (so, either it's empty, or it has 15m data, which we overwrite)
+                    if not key in series_datasource or series_datasource[key] != "PT60M":
+                        series[key] = float(price)
+                        series_datasource[key] = resolution
+
+                # Now fill in any missing hours 
+                current_time = start_time
+                last_price = series[current_time]
+
+                while current_time < end_time:  # upto excluding! the endtime
+                    if current_time in series:
+                        last_price = series[current_time]  # Update to the current price
+                    else:
+                        _LOGGER.debug(f"Extending the price {last_price} of the previous hour to {current_time}")
+                        series[current_time] = last_price  # Fill with the last known price
+                    current_time += timedelta(hours=1)
+
+        return series
 
 class Area(enum.Enum):
     """

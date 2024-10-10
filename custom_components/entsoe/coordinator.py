@@ -93,13 +93,12 @@ class EntsoeCoordinator(DataUpdateCoordinator):
 
         return price
 
-    # ENTSO: recalculate the price for each price
     def parse_hourprices(self, hourprices):
         for hour, price in hourprices.items():
             hourprices[hour] = self.calc_price(value=price, fake_dt=hour)
         return hourprices
 
-    # ENTSO: Triggered by HA to refresh the data (interval = 60 minutes)
+    # Called by HA every refresh interval (60 minutes)
     async def _async_update_data(self) -> dict:
         """Get the latest data from ENTSO-e"""
         self.logger.debug("ENTSO-e DataUpdateCoordinator data update")
@@ -129,7 +128,6 @@ class EntsoeCoordinator(DataUpdateCoordinator):
             self.filtered_hourprices = self._filter_calculated_hourprices(parsed_data)
             return parsed_data
 
-    # ENTSO: check if we need to refresh the data. If we have None, or less than 20hrs left for today, or less than 20hrs tomorrow and its after 11
     def check_update_needed(self, now):
         if self.data is None:
             return True
@@ -139,7 +137,6 @@ class EntsoeCoordinator(DataUpdateCoordinator):
             return True
         return False
 
-    # ENTSO: new prices using an async job
     async def fetch_prices(self, start_date, end_date):
         try:
             # run api_update in async job
@@ -167,7 +164,6 @@ class EntsoeCoordinator(DataUpdateCoordinator):
                     f"Warning the integration doesn't have any up to date local data this means that entities won't get updated but access remains to restorable entities: {exc}."
                 )
 
-    # ENTSO: the async fetch job itself
     def api_update(self, start_date, end_date, api_key):
         client = EntsoeClient(api_key=api_key)
         return client.query_day_ahead_prices(
@@ -277,23 +273,46 @@ class EntsoeCoordinator(DataUpdateCoordinator):
                 if hour >= self.today - timedelta(days=1)
             }
 
-    # ANALYSIS: Get max price in filtered period
-    def get_max_price(self):
-        return max(self.filtered_hourprices.values())
+    def get_prices_today(self):
+        return self.get_timestamped_prices(self.get_data_today())
 
-    # ANALYSIS: Get min price in filtered period
-    def get_min_price(self):
-        return min(self.filtered_hourprices.values())
+    def get_prices_tomorrow(self):
+        return self.get_timestamped_prices(self.get_data_tomorrow())
 
-    # ANALYSIS: Get timestamp of max price in filtered period
-    def get_max_time(self):
-        return max(self.filtered_hourprices, key=self.filtered_hourprices.get)
+    def get_prices(self):
+        if len(self.data) > 48:
+            return self.get_timestamped_prices(
+                {hour: price for hour, price in self.data.items() if hour >= self.today}
+            )
+        return self.get_timestamped_prices(
+            {
+                hour: price
+                for hour, price in self.data.items()
+                if hour >= self.today - timedelta(days=1)
+            }
+        )
 
-    # ANALYSIS: Get timestamp of min price in filtered period
-    def get_min_time(self):
-        return min(self.filtered_hourprices, key=self.filtered_hourprices.get)
+    def get_data(self, date):
+        return {k: v for k, v in self.data.items() if k.date() == date.date()}
 
-    # ANALYSIS: Get avg price in filtered period
+    def get_data_today(self):
+        return {k: v for k, v in self.data.items() if k.date() == self.today.date()}
+
+    def get_data_tomorrow(self):
+        return {
+            k: v
+            for k, v in self.data.items()
+            if k.date() == self.today.date() + timedelta(days=1)
+        }
+
+    def get_next_hourprice(self) -> int:
+        return self.data[
+            dt.now().replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
+        ]
+
+    def get_current_hourprice(self) -> int:
+        return self.data[dt.now().replace(minute=0, second=0, microsecond=0)]
+
     def get_avg_price(self):
         return round(
             sum(self.filtered_hourprices.values())
@@ -301,11 +320,21 @@ class EntsoeCoordinator(DataUpdateCoordinator):
             5,
         )
 
-    # ANALYSIS: Get percentage of current price relative to maximum of filtered period
+    def get_max_price(self):
+        return max(self.filtered_hourprices.values())
+
+    def get_min_price(self):
+        return min(self.filtered_hourprices.values())
+
+    def get_max_time(self):
+        return max(self.filtered_hourprices, key=self.filtered_hourprices.get)
+
+    def get_min_time(self):
+        return min(self.filtered_hourprices, key=self.filtered_hourprices.get)
+
     def get_percentage_of_max(self):
         return round(self.get_current_hourprice() / self.get_max_price() * 100, 1)
 
-    # ANALYSIS: Get percentage of current price relative to spread (max-min) of filtered period
     def get_percentage_of_range(self):
         min = self.get_min_price()
         spread = self.get_max_price() - min

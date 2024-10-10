@@ -15,7 +15,7 @@ from .api_client import EntsoeClient
 from .const import AREA_INFO, ANALYSIS_WINDOW, DEFAULT_MODIFYER, ENERGY_SCALES
 
 # depending on timezone less than 24 hours could be returned.
-# TODO: is this still a valid minimum now that we fill missing hours in the api_client?
+# is this still a valid minimum now that we fill missing hours in the api_client?
 MIN_HOURS = 20
 
 
@@ -250,11 +250,11 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         now = dt.now()
         if self.last_analysis is None or self.last_analysis.hour != now.hour:
             self.logger.debug(
-                f"The analysis window needs to be updated to the current time"
+                "The analysis window needs to be updated to the current time"
             )
             if self.today.date() != now.date():
                 self.logger.debug(
-                    f"new day detected: update today and filtered hourprices"
+                    "new day detected: update today and filtered hourprices"
                 )
                 self.today = now.replace(hour=0, minute=0, second=0, microsecond=0)
             self.filtered_hourprices = self._filter_analysis_window(self.data)
@@ -325,7 +325,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         return min(self.filtered_hourprices, key=self.filtered_hourprices.get)
 
     # ANALYSIS: Get avg price in analysis window
-    # TODO import mean() from statistics
+    # Tip: import mean() from statistics
     def get_avg_price(self):
         prices = self.filtered_hourprices.values()
         return round(sum(prices) / len(prices), 5)
@@ -343,7 +343,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
 
     # --------------------------------------------------------------------------------------------------------------------------------
     # SERVICES: returns data from the coordinator cache, or directly from ENTSO when not availble
-    # TODO: danger here for processing requests with huge periods -> suggest to limit to the 72 hrs of cached data
+    # danger here for processing requests with huge periods -> suggest to limit to the 72 hrs of cached data
     async def get_energy_prices(self, start_date, end_date):
         # check if we have the data already
         if (

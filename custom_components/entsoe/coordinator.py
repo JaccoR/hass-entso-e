@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import threading
 from datetime import timedelta
 
 import homeassistant.helpers.config_validation as cv
@@ -45,6 +46,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         self.today = None
         self.calculator_last_sync = None
         self.filtered_hourprices = []
+        self.lock = threading.Lock()
 
         # Check incase the sensor was setup using config flow.
         # This blow up if the template isnt valid.
@@ -239,19 +241,29 @@ class EntsoeCoordinator(DataUpdateCoordinator):
     # we could still optimize as not every calculator mode needs hourly updates
     def sync_calculator(self):
         now = dt.now()
-        if (
-            self.calculator_last_sync is None
-            or self.calculator_last_sync.hour != now.hour
-        ):
-            self.logger.debug("The calculator needs to be synced with the current time")
-            if self.today.date() != now.date():
+        with self.lock:
+            if (
+                self.calculator_last_sync is None
+                or self.calculator_last_sync.hour != now.hour
+            ):
                 self.logger.debug(
-                    "new day detected: update today and filtered hourprices"
+                    "The calculator needs to be synced with the current time"
                 )
-                self.today = now.replace(hour=0, minute=0, second=0, microsecond=0)
-            self.filtered_hourprices = self._filter_calculated_hourprices(self.data)
+                if self.today.date() != now.date():
+                    self.logger.debug(
+                        "new day detected: update today and filtered hourprices"
+                    )
+                    self.today = now.replace(hour=0, minute=0, second=0, microsecond=0)
 
-        self.calculator_last_sync = now
+                    # remove stale data
+                    self.data = {
+                        hour: price
+                        for hour, price in self.data.items()
+                        if hour >= self.today - timedelta(days=1)
+                    }
+                self.filtered_hourprices = self._filter_calculated_hourprices(self.data)
+
+            self.calculator_last_sync = now
 
     # ANALYSIS: filter the hourprices on which to apply the calculations based on the calculation_mode
     def _filter_calculated_hourprices(self, data):

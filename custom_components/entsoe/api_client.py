@@ -164,10 +164,10 @@ class EntsoeClient:
 
         # now calculate hourly averages based on available points
         data = {}
-        last_position = max(positions.keys())
-        last_price = positions.get(0, 0)
+        last_hour = (max(positions.keys()) + 3) // 4
+        last_price = 0
 
-        for hour in range((last_position // 4) + 1):
+        for hour in range(last_hour):
             sum_prices = 0
             for idx in range(hour * 4 + 1, hour * 4 + 5):
                 last_price = positions.get(idx, last_price)

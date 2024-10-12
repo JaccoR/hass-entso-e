@@ -223,6 +223,19 @@ class TestDocumentParsing(unittest.TestCase):
             },
         )
 
+    def test_be_exact4(self):
+        with open("./datasets/BE_15M_exact4.xml") as f:
+            data = f.read()
+
+        self.maxDiff = None
+        self.assertDictEqual(
+            self.client.parse_price_document(data),
+            {
+                # part 1 - 15M resolution
+                datetime.fromisoformat("2024-10-05T22:00:00Z"): 42.94,  # average
+            },
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

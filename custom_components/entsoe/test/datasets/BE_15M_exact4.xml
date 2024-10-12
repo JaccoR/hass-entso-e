@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+  <Publication_MarketDocument xmlns="urn:iec62325.351:tc57wg16:451-3:publicationdocument:7:3">
+    <mRID>64e2af3a87c2404cbea80edc067a1b6f</mRID>
+    <revisionNumber>1</revisionNumber>
+    <type>A44</type>
+    <sender_MarketParticipant.mRID codingScheme="A01">10X1001A1001A450</sender_MarketParticipant.mRID>
+    <sender_MarketParticipant.marketRole.type>A32</sender_MarketParticipant.marketRole.type>
+    <receiver_MarketParticipant.mRID codingScheme="A01">10X1001A1001A450</receiver_MarketParticipant.mRID>
+    <receiver_MarketParticipant.marketRole.type>A33</receiver_MarketParticipant.marketRole.type>
+    <createdDateTime>2024-10-07T14:36:40Z</createdDateTime>
+    <period.timeInterval>
+      <start>2024-10-05T22:00Z</start>
+      <end>2024-10-06T22:00Z</end>
+    </period.timeInterval>
+      <TimeSeries>
+        <mRID>1</mRID>
+        <auction.type>A01</auction.type>
+        <businessType>A62</businessType>
+        <in_Domain.mRID codingScheme="A01">10YBE----------2</in_Domain.mRID>
+        <out_Domain.mRID codingScheme="A01">10YBE----------2</out_Domain.mRID>
+        <contract_MarketAgreement.type>A01</contract_MarketAgreement.type>
+        <currency_Unit.name>EUR</currency_Unit.name>
+        <price_Measure_Unit.name>MWH</price_Measure_Unit.name>
+        <curveType>A03</curveType>
+          <Period>
+            <timeInterval>
+              <start>2024-10-05T22:00Z</start>
+              <end>2024-10-05T23:00Z</end>
+            </timeInterval>
+            <resolution>PT15M</resolution>
+              <Point>
+                <position>1</position>
+                 <price.amount>55.35</price.amount>
+              </Point>
+              <Point>
+                <position>2</position>
+                 <price.amount>44.22</price.amount>
+              </Point>
+              <Point>
+                <position>3</position>
+                 <price.amount>40.32</price.amount>
+              </Point>
+              <Point>
+                <position>4</position>
+                 <price.amount>31.86</price.amount>
+              </Point>
+          </Period>
+      </TimeSeries>
+  </Publication_MarketDocument>

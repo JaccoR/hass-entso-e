@@ -313,7 +313,8 @@ class EntsoeOptionFlowHandler(OptionsFlow):
                     ): vol.All(vol.Coerce(float, "must be a number")),
                     vol.Optional(
                         CONF_MODIFYER,
-                        default=self.config_entry.options[CONF_MODIFYER],
+                        description={"suggested_value": self.config_entry.options[CONF_MODIFYER]},
+                        default=DEFAULT_MODIFYER,
                     ): TemplateSelector(TemplateSelectorConfig()),
                     vol.Optional(
                         CONF_CURRENCY,

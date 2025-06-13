@@ -62,7 +62,7 @@ An example template is given below. You can find and share other templates [here
     "winter_day": 0.465,
     "summer_day": 0.284,
     "summer_night": 0.246,
-    "VAT": 1.21
+    "VAT": 0.21
 }
 %}
 {% if now().month >= 5 and now().month <11 %}

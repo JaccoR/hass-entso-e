@@ -2,43 +2,57 @@
   "config": {
     "step": {
       "user": {
-          "description": "Please add the ENTSO-e Transparency Platform API key and area",
-          "data": {
-            "api_key": "Your API Key",
-            "area": "Area*",
-            "modifyer": "Price Modifyer Template (Optional)",
-            "name": "Name (Optional)"
-          }
-      }
-    },
-    "error": {
-      "invalid_template": "Invalid Template, Check https://github.com/JaccoR/hass-entso-e",
-      "missing_current_price": "'current_price' is missing from the template",
-      "already_configured": "Integration instance with the same name already exists"
-  }
-  },
-  "options": {
-    "step": {
-      "init": {
-        "description": "Please add the ENTSO-e Transparency Platform API key and area",
+        "description": "Vul de ENTSO-e Transparency Platform API key en gebied in",
         "data": {
-          "api_key": "Your API Key",
-          "area": "Area*",
-          "modifyer": "Price Modifyer Template (Optional)",
-          "name": "Name (Optional)"
+          "api_key": "Jouw API key",
+          "area": "Gebied*",
+          "advanced_options": "Ik wil BTW, template en berekenmethode instellen (volgende stap)",
+          "modifyer": "Prijs Aanpassing Template (Optioneel)",
+          "currency": "Valuta van de aangepaste prijs (Optioneel)",
+          "energy_scale": "Eenheid van energie (Optioneel)",
+          "name": "Naam (Optioneel)"
+        }
+      },
+      "extra": {
+        "data": {
+          "VAT_value": "BTW tarief (voorbeeld: voor 21% BTW voer 0.21 in)",
+          "modifyer": "Prijs Aanpassing Template (Optioneel)",
+          "currency": "Valuta van de aangepaste prijs (Optioneel)",
+          "energy_scale": "Eenheid van energie (Optioneel)"
         }
       }
     },
     "error": {
-      "invalid_template": "Invalid Template, Check https://github.com/JaccoR/hass-entso-e",
-      "missing_current_price": "'current_price' is missing from the template",
-      "already_configured": "Integration instance with the same name already exists"
-  }
+      "invalid_template": "Ongeldig template, zie https://github.com/JaccoR/hass-entso-e",
+      "missing_current_price": "'current_price' komt niet voor in het template, zie https://github.com/JaccoR/hass-entso-e",
+      "already_configured": "Er bestaat al een integratie instantie met deze naam"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "description": "Vul de ENTSO-e Transparency Platform API key en gebied in",
+        "data": {
+          "api_key": "Jouw API key",
+          "area": "Gebied",
+          "modifyer": "Prijs Aanpassing Template (Optioneel)",
+          "currency": "Valuta van de aangepaste prijs (Optioneel)",
+          "energy_scale": "Eenheid van energie (Optioneel)",
+          "VAT_value": "BTW tarief (voorbeeld: voor 21% BTW voer 0.21 in)",
+          "name": "Naam (Optioneel)"
+        }
+      }
+    },
+    "error": {
+      "invalid_template": "Ongeldig template, zie https://github.com/JaccoR/hass-entso-e",
+      "missing_current_price": "'current_price' komt niet voor in het template, zie https://github.com/JaccoR/hass-entso-e",
+      "already_configured": "Er bestaat al een integratie instantie met deze naam"
+    }
   },
   "services": {
     "get_energy_prices": {
-      "name": "Get energy prices",
-      "description": "Request prices for a specified range from entso-e",
+      "name": "Haal prijzen op",
+      "description": "Haal prijzen op bij ENTSO-e voor een specifiek tijdsbestek",
       "fields": {
         "config_entry": {
           "name": "Config Entry",
@@ -46,11 +60,11 @@
         },
         "start": {
           "name": "Start",
-          "description": "Specifies the date and time from which to retrieve prices. Defaults to today if omitted."
+          "description": "Specificeert het datum en tijdstip vanaf waar prijzen op te halen. Valt terug op vandaag als weggelaten."
         },
         "end": {
           "name": "End",
-          "description": "Specifies the date and time until which to retrieve prices. Defaults to today if omitted."
+          "description": "Specificeert het datum en tijdstip tot waar prijzen op te halen. Valt terug op vandaag als weggelaten."
         }
       }
     }

@@ -62,7 +62,7 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
         config_entry: ConfigEntry,
     ) -> EntsoeOptionFlowHandler:
         """Get the options flow for this handler."""
-        return EntsoeOptionFlowHandler(config_entry)
+        return EntsoeOptionFlowHandler()
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -248,10 +248,13 @@ class EntsoeOptionFlowHandler(OptionsFlow):
 
     logger = logging.getLogger(__name__)
 
-    def __init__(self, config_entry: ConfigEntry) -> None:
+    def __init__(self) -> None:
         """Initialize options flow."""
-        self.config_entry = config_entry
         self.area = None
+
+    @property
+    def config_entry(self):
+        return self.hass.config_entries.async_get_entry(self.handler)
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None

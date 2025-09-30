@@ -11,10 +11,12 @@ from homeassistant.helpers.typing import ConfigType
 
 from .const import (
     CALCULATION_MODE,
+    HOURLY_AVERAGE,
     CONF_API_KEY,
     CONF_AREA,
     CONF_ENERGY_SCALE,
     CONF_CALCULATION_MODE,
+    CONF_HOURLY_AVERAGE,
     CONF_MODIFYER,
     CONF_VAT_VALUE,
     DEFAULT_MODIFYER,
@@ -48,6 +50,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     calculation_mode = entry.options.get(
         CONF_CALCULATION_MODE, CALCULATION_MODE["default"]
     )
+    hourly_average = entry.options.get(
+        CONF_HOURLY_AVERAGE, HOURLY_AVERAGE["no"]
+    )
     entsoe_coordinator = EntsoeCoordinator(
         hass,
         api_key=api_key,
@@ -56,6 +61,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         modifyer=modifyer,
         calculation_mode=calculation_mode,
         VAT=vat,
+        hourly_average=hourly_average
     )
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = entsoe_coordinator

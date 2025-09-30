@@ -30,6 +30,7 @@ from .const import (
     CONF_CURRENCY,
     CONF_ENERGY_SCALE,
     CONF_ENTITY_NAME,
+    CONF_HOURLY_AVERAGE,
     CONF_MODIFYER,
     CONF_VAT_VALUE,
     DEFAULT_CURRENCY,
@@ -37,6 +38,7 @@ from .const import (
     DEFAULT_MODIFYER,
     DOMAIN,
     ENERGY_SCALES,
+    HOURLY_AVERAGE,
     UNIQUE_ID,
 )
 
@@ -94,6 +96,7 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
                 user_input[CONF_MODIFYER] = DEFAULT_MODIFYER
                 user_input[CONF_CURRENCY] = DEFAULT_CURRENCY
                 user_input[CONF_ENERGY_SCALE] = DEFAULT_ENERGY_SCALE
+                user_input[CONF_HOURLY_AVERAGE] = HOURLY_AVERAGE["no"]
                 user_input[CONF_CALCULATION_MODE] = CALCULATION_MODE["default"]
 
                 return self.async_create_entry(
@@ -105,6 +108,7 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
                         CONF_MODIFYER: user_input[CONF_MODIFYER],
                         CONF_CURRENCY: user_input[CONF_CURRENCY],
                         CONF_ENERGY_SCALE: user_input[CONF_ENERGY_SCALE],
+                        CONF_HOURLY_AVERAGE: user_input[CONF_HOURLY_AVERAGE],
                         CONF_ADVANCED_OPTIONS: user_input[CONF_ADVANCED_OPTIONS],
                         CONF_VAT_VALUE: user_input[CONF_VAT_VALUE],
                         CONF_ENTITY_NAME: user_input[CONF_ENTITY_NAME],
@@ -183,6 +187,7 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
                                 CONF_MODIFYER: user_input[CONF_MODIFYER],
                                 CONF_CURRENCY: user_input[CONF_CURRENCY],
                                 CONF_ENERGY_SCALE: user_input[CONF_ENERGY_SCALE],
+                                CONF_HOURLY_AVERAGE: user_input[CONF_HOURLY_AVERAGE],
                                 CONF_VAT_VALUE: user_input[CONF_VAT_VALUE],
                                 CONF_ENTITY_NAME: user_input[CONF_ENTITY_NAME],
                                 CONF_CALCULATION_MODE: user_input[
@@ -219,6 +224,17 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
                                 SelectOptionDict(value=value, label=key)
                                 for key, value in CALCULATION_MODE.items()
                                 if key != "default"
+                            ]
+                        ),
+                    ),
+                    vol.Optional(
+                        CONF_HOURLY_AVERAGE,
+                        default=HOURLY_AVERAGE["no"],
+                    ): SelectSelector(
+                        SelectSelectorConfig(
+                            options=[
+                                SelectOptionDict(value=value, label=key)
+                                for key, value in HOURLY_AVERAGE.items()
                             ]
                         ),
                     ),
@@ -292,6 +308,10 @@ class EntsoeOptionFlowHandler(OptionsFlow):
             CONF_CALCULATION_MODE, CALCULATION_MODE["default"]
         )
 
+        hourly_average_default = self.config_entry.options.get(
+            CONF_HOURLY_AVERAGE, HOURLY_AVERAGE["no"]
+        )
+
         return self.async_show_form(
             step_id="init",
             errors=errors,
@@ -340,6 +360,17 @@ class EntsoeOptionFlowHandler(OptionsFlow):
                                 SelectOptionDict(value=value, label=key)
                                 for key, value in CALCULATION_MODE.items()
                                 if key != "default"
+                            ]
+                        ),
+                    ),
+                    vol.Optional(
+                        CONF_HOURLY_AVERAGE,
+                        default=hourly_average_default,
+                    ): SelectSelector(
+                        SelectSelectorConfig(
+                            options=[
+                                SelectOptionDict(value=value, label=key)
+                                for key, value in HOURLY_AVERAGE.items()
                             ]
                         ),
                     ),

@@ -13,6 +13,7 @@ CONF_CURRENCY = "currency"
 CONF_ENERGY_SCALE = "energy_scale"
 CONF_ADVANCED_OPTIONS = "advanced_options"
 CONF_CALCULATION_MODE = "calculation_mode"
+CONF_HOURLY_AVERAGE = "hourly_average"
 CONF_VAT_VALUE = "VAT_value"
 
 DEFAULT_MODIFYER = "{{current_price}}"
@@ -25,6 +26,11 @@ CALCULATION_MODE = {
     "rotation": "rotation",
     "sliding": "sliding",
     "publish": "publish",
+}
+
+HOURLY_AVERAGE = {
+    "no": "no",
+    "yes": "yes",
 }
 
 ENERGY_SCALES = { "kWh": 1000, "MWh": 1 }

@@ -13,7 +13,7 @@ from jinja2 import pass_context
 from requests.exceptions import HTTPError
 
 from .api_client import EntsoeClient
-from .const import AREA_INFO, CALCULATION_MODE, DEFAULT_MODIFYER, ENERGY_SCALES
+from .const import AREA_INFO, CALCULATION_MODE, DEFAULT_MODIFYER, ENERGY_SCALES, HOURLY_AVERAGE
 
 # depending on timezone les than 24 hours could be returned.
 MIN_HOURS = 20
@@ -34,6 +34,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         modifyer,
         calculation_mode=CALCULATION_MODE["default"],
         VAT=0,
+        hourly_average=HOURLY_AVERAGE["no"],
     ) -> None:
         """Initialize the data object."""
         self.hass = hass
@@ -42,6 +43,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         self.area = AREA_INFO[area]["code"]
         self.energy_scale = energy_scale
         self.calculation_mode = calculation_mode
+        self.hourly_average = hourly_average
         self.vat = VAT
         self.today = None
         self.calculator_last_sync = None
@@ -146,7 +148,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         try:
             # run api_update in async job
             resp = await self.hass.async_add_executor_job(
-                self.api_update, start_date, end_date, self.api_key
+                self.api_update, start_date, end_date, self.api_key, self.hourly_average
             )
             return resp
 
@@ -170,10 +172,10 @@ class EntsoeCoordinator(DataUpdateCoordinator):
                 )
 
     # ENTSO: the async fetch job itself
-    def api_update(self, start_date, end_date, api_key):
-        client = EntsoeClient(api_key=api_key)
+    def api_update(self, start_date, end_date, api_key, hourly_average):
+        client = EntsoeClient(api_key=api_key, hourly_average=hourly_average)
         return client.query_day_ahead_prices(
-            country_code=self.area, start=start_date, end=end_date
+            country_code=self.area, start=start_date, end=end_date, hourly_average=hourly_average
         )
 
     # ENTSO: Return the data for the given date

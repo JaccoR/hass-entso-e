@@ -250,11 +250,11 @@ class EntsoeCoordinator(DataUpdateCoordinator):
     # we could still optimize as not every calculator mode needs hourly updates
     async def sync_calculator(self):
         now = dt.now()
-        current_bucket = bucket_time(now, self.period_minutes)
+        bucket = self.current_bucket_time
         with self.lock:
             if (
                 self.calculator_last_sync is None
-                or self.calculator_last_sync != current_bucket
+                or self.calculator_last_sync != bucket
             ):
                 self.logger.debug(
                     "The calculator needs to be synced with the current time"
@@ -276,7 +276,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
                         if hour >= self.today - timedelta(days=1)
                     }
 
-            self.calculator_last_sync = current_bucket
+            self.calculator_last_sync = bucket
 
     # ANALYSIS: filter the prices on which to apply the calculations based on the calculation_mode
     @cached_property
@@ -293,8 +293,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
             }
         # sliding = calculations made on all data from the current bucket and beyond (future data only)
         elif self.calculation_mode == CALCULATION_MODE["sliding"]:
-            now = bucket_time(dt.now(), self.period_minutes)
-            return {ts: price for ts, price in self.data.items() if ts >= now}
+            return {ts: price for ts, price in self.data.items() if ts >= self.current_bucket_time}
         # publish >48 hrs of data = calculations made on all data of today and tomorrow (48 hrs)
         elif (
             self.calculation_mode == CALCULATION_MODE["publish"] and len(self.data) > 48

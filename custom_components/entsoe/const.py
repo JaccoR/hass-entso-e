@@ -29,7 +29,7 @@ CALCULATION_MODE = {
     "publish": "publish",
 }
 
-ENERGY_SCALES = { "kWh": 1000, "MWh": 1 }
+ENERGY_SCALES = {"kWh": 1000, "MWh": 1}
 PERIOD_OPTIONS = ["PT60M", "PT15M"]
 
 # Commented ones are not working at entsoe

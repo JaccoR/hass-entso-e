@@ -37,7 +37,10 @@ from .const import (
     DEFAULT_MODIFYER,
     DOMAIN,
     ENERGY_SCALES,
-    UNIQUE_ID, CONF_PERIOD, PERIOD_OPTIONS, DEFAULT_PERIOD,
+    UNIQUE_ID,
+    CONF_PERIOD,
+    PERIOD_OPTIONS,
+    DEFAULT_PERIOD,
 )
 
 
@@ -131,9 +134,7 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
                         ),
                     ),
                     vol.Required(CONF_PERIOD): SelectSelector(
-                        SelectSelectorConfig(
-                            options=PERIOD_OPTIONS
-                        ),
+                        SelectSelectorConfig(options=PERIOD_OPTIONS),
                     ),
                     vol.Optional(CONF_ADVANCED_OPTIONS, default=False): bool,
                 },
@@ -322,7 +323,9 @@ class EntsoeOptionFlowHandler(OptionsFlow):
                     ): vol.All(vol.Coerce(float, "must be a number")),
                     vol.Optional(
                         CONF_MODIFYER,
-                        description={"suggested_value": self.config_entry.options[CONF_MODIFYER]},
+                        description={
+                            "suggested_value": self.config_entry.options[CONF_MODIFYER]
+                        },
                         default=DEFAULT_MODIFYER,
                     ): TemplateSelector(TemplateSelectorConfig()),
                     vol.Optional(

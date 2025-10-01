@@ -161,30 +161,14 @@ class EntsoeClient:
 
     # processing quarterly prices -> this is more complex
     def process_PT15M_points(self, period: Element, start_time: datetime):
-        positions = {}
-
-        # first store all positions
+        data = {}
         for point in period.findall(".//Point"):
             position = point.find(".//position").text
             price = point.find(".//price.amount").text
-            positions[int(position)] = float(price)
-
-        # now calculate hourly averages based on available points
-        data = {}
-        last_hour = (max(positions.keys()) + 3) // 4
-        last_price = 0
-
-        for hour in range(last_hour):
-            sum_prices = 0
-            for idx in range(hour * 4 + 1, hour * 4 + 5):
-                last_price = positions.get(idx, last_price)
-                sum_prices += last_price
-
-            time = start_time + timedelta(hours=hour)
-            data[time] = round(sum_prices / 4, 2)
-
+            interval = int(position) - 1
+            time = start_time + timedelta(minutes=interval * 15)
+            data[time] = float(price)
         return data
-
 
 class Area(enum.Enum):
     """

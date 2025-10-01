@@ -81,7 +81,7 @@ class EntsoeClient:
                 _LOGGER.debug(f"Failed to parse response content:{response.content}")
                 raise exc
         else:
-            print(f"Failed to retrieve data: {response.status_code}")
+            _LOGGER.error(f"Failed to retrieve data: {response.status_code}")
             return None
 
     # lets process the received document

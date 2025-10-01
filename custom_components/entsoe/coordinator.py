@@ -41,7 +41,6 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         self.api_key = api_key
         self.modifyer = modifyer
         self.period = period
-        print(self.period)
         self.area = AREA_INFO[area]["code"]
         self.energy_scale = energy_scale
         self.calculation_mode = calculation_mode

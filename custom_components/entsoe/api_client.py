@@ -3,11 +3,14 @@ from __future__ import annotations
 import enum
 import logging
 import xml.etree.ElementTree as ET
+from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Dict, Union
 
 import pytz
 import requests
+
+from custom_components.entsoe.const import DEFAULT_PERIOD
 
 _LOGGER = logging.getLogger(__name__)
 URL = "https://web-api.tp.entsoe.eu/api"
@@ -16,10 +19,11 @@ DATETIMEFORMAT = "%Y%m%d%H00"
 
 class EntsoeClient:
 
-    def __init__(self, api_key: str):
+    def __init__(self, api_key: str, period : str = DEFAULT_PERIOD) -> None:
         if api_key == "":
             raise TypeError("API key cannot be empty")
         self.api_key = api_key
+        self.configuration_period = period
 
     def _base_request(
         self, params: Dict, start: datetime, end: datetime
@@ -125,10 +129,12 @@ class EntsoeClient:
                     )
                     continue
 
-                if resolution == "PT60M":
-                    series.update(self.process_PT60M_points(period, start_time))
-                else:
-                    series.update(self.process_PT15M_points(period, start_time))
+                interval = 15 if resolution == "PT15M" else 60
+                data = self.process_points(period, start_time, interval)
+                if resolution == "PT15M" and self.configuration_period == "PT60M":
+                    _LOGGER.debug("Got 15 minutes interval prices, but period is configured on 60 minutes. Averaging to hours")
+                    data = self.average_to_hours(data)
+                series.update(data)
 
                 # Now fill in any missing hours
                 current_time = start_time
@@ -149,41 +155,41 @@ class EntsoeClient:
         return series
 
     # processing hourly prices info -> thats easy
-    def process_PT60M_points(self, period: Element, start_time: datetime):
+    def process_points(self, period: Element, start_time: datetime, interval: int) -> dict:
+        _LOGGER.debug(f"Processing prices based on interval {interval} minutes")
         data = {}
         for point in period.findall(".//Point"):
             position = point.find(".//position").text
             price = point.find(".//price.amount").text
-            hour = int(position) - 1
-            time = start_time + timedelta(hours=hour)
+            position_ix = int(position) - 1
+            time = start_time + timedelta(minutes=position_ix * interval)
             data[time] = float(price)
         return data
 
+    def average_to_hours(self, data: dict) -> dict:
+        """
+        Average 15 minute prices to hourly prices
+        """
+        by_hour = defaultdict(list)
+        for timestamp, price in data.items():
+            hour = timestamp.replace(minute=0, second=0, microsecond=0)
+            by_hour[hour].append(price)
+
+        return {hour: round(sum(prices) / len(prices), 2) for hour, prices in by_hour.items()}
+
+
     # processing quarterly prices -> this is more complex
-    def process_PT15M_points(self, period: Element, start_time: datetime):
-        positions = {}
-
-        # first store all positions
-        for point in period.findall(".//Point"):
-            position = point.find(".//position").text
-            price = point.find(".//price.amount").text
-            positions[int(position)] = float(price)
-
-        # now calculate hourly averages based on available points
-        data = {}
-        last_hour = (max(positions.keys()) + 3) // 4
-        last_price = 0
-
-        for hour in range(last_hour):
-            sum_prices = 0
-            for idx in range(hour * 4 + 1, hour * 4 + 5):
-                last_price = positions.get(idx, last_price)
-                sum_prices += last_price
-
-            time = start_time + timedelta(hours=hour)
-            data[time] = round(sum_prices / 4, 2)
-
-        return data
+    # def process_PT15M_points(self, period: Element, start_time: datetime):
+    #     data = {}
+    #
+    #     for point in period.findall(".//Point"):
+    #         position = point.find(".//position").text
+    #         price = point.find(".//price.amount").text
+    #         interval = int(position) - 1
+    #         time = start_time + timedelta(minutes=interval * 15)
+    #         data[time] = float(price)
+    #
+    #     return data
 
 
 class Area(enum.Enum):

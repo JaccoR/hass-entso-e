@@ -30,6 +30,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         hass: HomeAssistant,
         api_key,
         area,
+        period,
         energy_scale,
         modifyer,
         calculation_mode=CALCULATION_MODE["default"],
@@ -39,6 +40,8 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         self.hass = hass
         self.api_key = api_key
         self.modifyer = modifyer
+        self.period = period
+        print(self.period)
         self.area = AREA_INFO[area]["code"]
         self.energy_scale = energy_scale
         self.calculation_mode = calculation_mode
@@ -171,7 +174,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
 
     # ENTSO: the async fetch job itself
     def api_update(self, start_date, end_date, api_key):
-        client = EntsoeClient(api_key=api_key)
+        client = EntsoeClient(api_key=api_key, period=self.period)
         return client.query_day_ahead_prices(
             country_code=self.area, start=start_date, end=end_date
         )

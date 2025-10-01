@@ -4,7 +4,6 @@ import logging
 import threading
 from datetime import timedelta
 from functools import cached_property
-from linecache import cache
 
 import homeassistant.helpers.config_validation as cv
 from homeassistant.core import HomeAssistant

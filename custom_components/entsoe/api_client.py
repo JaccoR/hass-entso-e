@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import enum
 import logging
-import re
 import xml.etree.ElementTree as ET
 from collections import defaultdict
 from datetime import datetime, timedelta

@@ -178,20 +178,6 @@ class EntsoeClient:
         return {hour: round(sum(prices) / len(prices), 2) for hour, prices in by_hour.items()}
 
 
-    # processing quarterly prices -> this is more complex
-    # def process_PT15M_points(self, period: Element, start_time: datetime):
-    #     data = {}
-    #
-    #     for point in period.findall(".//Point"):
-    #         position = point.find(".//position").text
-    #         price = point.find(".//price.amount").text
-    #         interval = int(position) - 1
-    #         time = start_time + timedelta(minutes=interval * 15)
-    #         data[time] = float(price)
-    #
-    #     return data
-
-
 class Area(enum.Enum):
     """
     ENUM containing 3 things about an Area: CODE, Meaning, Timezone

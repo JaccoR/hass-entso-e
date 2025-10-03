@@ -147,23 +147,6 @@ class EntsoeClient:
                         ),
                     )
                 series.update(data)
-
-                # Now fill in any missing hours
-                current_time = start_time
-                last_price = series[current_time]
-
-                while current_time < end_time:  # upto excluding! the endtime
-                    if current_time in series:
-                        last_price = series[current_time]  # Update to the current price
-                    else:
-                        _LOGGER.debug(
-                            f"Extending the price {last_price} of the previous hour to {current_time}"
-                        )
-                        series[current_time] = (
-                            last_price  # Fill with the last known price
-                        )
-                    current_time += timedelta(hours=1)
-
         return series
 
     # processing hourly prices info -> thats easy
@@ -171,13 +154,21 @@ class EntsoeClient:
         self, period: Element, start_time: datetime, interval: int
     ) -> dict:
         _LOGGER.debug(f"Processing prices based on interval {interval} minutes")
+        # Extract (position, price) pairs
+        points = sorted(
+            (int(p.findtext(".//position")), float(p.findtext(".//price.amount")))
+            for p in period.findall(".//Point")
+        )
+        if not points:
+            return {}
+
         data = {}
-        for point in period.findall(".//Point"):
-            position = point.find(".//position").text
-            price = point.find(".//price.amount").text
-            position_ix = int(position) - 1
-            time = start_time + timedelta(minutes=position_ix * interval)
-            data[time] = float(price)
+        last_price = None
+        for pos in range(points[0][0], points[-1][0] + 1):
+            if points and pos == points[0][0]:
+                last_price = points.pop(0)[1]
+            data[start_time + timedelta(minutes=(pos - 1) * interval)] = last_price
+
         return data
 
     def average_to_interval(self, data: dict, expected_interval: int) -> dict:

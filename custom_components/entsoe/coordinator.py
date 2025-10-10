@@ -278,7 +278,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
             self.calculator_last_sync = bucket
 
     # ANALYSIS: filter the prices on which to apply the calculations based on the calculation_mode
-    @cached_property
+    @property
     def _filtered_prices(self) -> dict:
         """
         Filter the prices based on the calculation mode.

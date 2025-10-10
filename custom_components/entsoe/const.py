@@ -8,6 +8,7 @@ COMPONENT_TITLE = "ENTSO-e Transparency Platform"
 CONF_API_KEY = "api_key"
 CONF_ENTITY_NAME = "name"
 CONF_AREA = "area"
+CONF_PERIOD = "period"
 CONF_MODIFYER = "modifyer"
 CONF_CURRENCY = "currency"
 CONF_ENERGY_SCALE = "energy_scale"
@@ -18,6 +19,7 @@ CONF_VAT_VALUE = "VAT_value"
 DEFAULT_MODIFYER = "{{current_price}}"
 DEFAULT_CURRENCY = CURRENCY_EURO
 DEFAULT_ENERGY_SCALE = "kWh"
+DEFAULT_PERIOD = "PT60M"
 
 # default is only for internal use / backwards compatibility
 CALCULATION_MODE = {
@@ -27,7 +29,8 @@ CALCULATION_MODE = {
     "publish": "publish",
 }
 
-ENERGY_SCALES = { "kWh": 1000, "MWh": 1 }
+ENERGY_SCALES = {"kWh": 1000, "MWh": 1}
+PERIOD_OPTIONS = ["PT60M", "PT15M"]
 
 # Commented ones are not working at entsoe
 AREA_INFO = {

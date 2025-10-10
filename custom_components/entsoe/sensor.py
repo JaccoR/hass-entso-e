@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import timedelta
 from typing import Any
 
 from homeassistant.components.sensor import (
@@ -25,6 +24,7 @@ from homeassistant.helpers.typing import StateType
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import utcnow
 
+from .utils import bucket_time
 from .const import (
     ATTRIBUTION,
     CONF_CURRENCY,
@@ -35,6 +35,7 @@ from .const import (
     DOMAIN,
 )
 from .coordinator import EntsoeCoordinator
+from .utils import get_interval_minutes
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -58,16 +59,16 @@ def sensor_descriptions(
             state_class=SensorStateClass.MEASUREMENT,
             icon="mdi:currency-eur",
             suggested_display_precision=3,
-            value_fn=lambda coordinator: coordinator.get_current_hourprice(),
+            value_fn=lambda coordinator: coordinator.get_current_price(),
         ),
         EntsoeEntityDescription(
-            key="next_hour_price",
+            key="next_hour_price",  # Technically this is the price for the next period, which may be 15 or 60 minutes. Keeping for backwards compatibility.
             name="Next hour electricity market price",
             native_unit_of_measurement=f"{currency}/{energy_scale}",
             state_class=SensorStateClass.MEASUREMENT,
             icon="mdi:currency-eur",
             suggested_display_precision=3,
-            value_fn=lambda coordinator: coordinator.get_next_hourprice(),
+            value_fn=lambda coordinator: coordinator.get_next_price(),
         ),
         EntsoeEntityDescription(
             key="min_price",
@@ -217,15 +218,16 @@ class EntsoeSensor(CoordinatorEntity, RestoreSensor):
             self._unsub_update()
             self._unsub_update = None
 
-        # Schedule the next update at exactly the next whole hour sharp
+        # Schedule the next update after the interval
         self._unsub_update = event.async_track_point_in_utc_time(
             self.hass,
             self._update_job,
-            utcnow().replace(minute=0, second=0) + timedelta(hours=1),
+            bucket_time(utcnow(), self.coordinator.period_minutes)
+            + self.coordinator.update_interval,
         )
 
-        # ensure the calculated data is refreshed by the changing hour
-        self.coordinator.sync_calculator()
+        # ensure the calculated data is refreshed
+        await self.coordinator.sync_calculator()
 
         if (
             self.coordinator.data is not None

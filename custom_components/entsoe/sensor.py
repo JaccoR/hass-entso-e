@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Optional
 
 from homeassistant.components.sensor import (
     DOMAIN,
@@ -16,7 +16,7 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import PERCENTAGE
-from homeassistant.core import HassJob, HomeAssistant
+from homeassistant.core import HassJob, HomeAssistant, callback
 from homeassistant.helpers import event
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -44,7 +44,7 @@ _LOGGER = logging.getLogger(__name__)
 class EntsoeEntityDescription(SensorEntityDescription):
     """Describes ENTSO-e sensor entity."""
 
-    value_fn: Callable[[dict], StateType] = None
+    value_fn: Callable[[EntsoeCoordinator], StateType] = None
 
 
 def sensor_descriptions(
@@ -138,18 +138,18 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up ENTSO-e price sensor entries."""
-    entsoe_coordinator = hass.data[DOMAIN][config_entry.entry_id]
+    entsoe_coordinator: EntsoeCoordinator = hass.data[DOMAIN][config_entry.entry_id]
 
     entities = []
-    entity = {}
-    for description in sensor_descriptions(
-        currency=config_entry.options.get(CONF_CURRENCY, DEFAULT_CURRENCY),
-        energy_scale=config_entry.options.get(CONF_ENERGY_SCALE, DEFAULT_ENERGY_SCALE),
-    ):
-        entity = description
+    
+    currency = config_entry.options.get(CONF_CURRENCY, DEFAULT_CURRENCY)
+    energy_scale = config_entry.options.get(CONF_ENERGY_SCALE, DEFAULT_ENERGY_SCALE)
+    entity_name = config_entry.options[CONF_ENTITY_NAME]
+    
+    for description in sensor_descriptions(currency=currency, energy_scale=energy_scale):
         entities.append(
             EntsoeSensor(
-                entsoe_coordinator, entity, config_entry.options[CONF_ENTITY_NAME]
+                entsoe_coordinator, description, entity_name
             )
         )
 
@@ -204,56 +204,50 @@ class EntsoeSensor(CoordinatorEntity, RestoreSensor):
             name="entso-e" + ((" (" + name + ")") if name != "" else ""),
         )
 
-        self._update_job = HassJob(self.async_schedule_update_ha_state)
-        self._unsub_update = None
+        # Removed custom scheduling job and unsubscribtion (was source of issues)
+        # self._update_job = HassJob(self.async_schedule_update_ha_state)
+        # self._unsub_update = None
 
         super().__init__(coordinator)
 
-    async def async_update(self) -> None:
-        """Get the latest data and updates the states."""
-        # _LOGGER.debug(f"update function for '{self.entity_id} called.'")
+    # REMOVED THE CUSTOM async_update METHOD - relying on coordinator events
 
-        # Cancel the currently scheduled event if there is any
-        if self._unsub_update:
-            self._unsub_update()
-            self._unsub_update = None
-
-        # Schedule the next update after the interval
-        self._unsub_update = event.async_track_point_in_utc_time(
-            self.hass,
-            self._update_job,
-            bucket_time(utcnow(), self.coordinator.period_minutes)
-            + self.coordinator.update_interval,
-        )
-
-        # ensure the calculated data is refreshed
-        await self.coordinator.sync_calculator()
-
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """Handle updated data from the coordinator and update sensor state."""
+        
+        # We rely on the coordinator's _async_update_data having completed and run _run_analysis()
         if (
             self.coordinator.data is not None
             and self.coordinator.today_data_available()
         ):
             value: Any = None
             try:
-                # _LOGGER.debug(f"current coordinator.data value: {self.coordinator.data}")
+                # Fetch value using the pre-calculated getter (e.g., get_min_price)
                 value = self.entity_description.value_fn(self.coordinator)
 
+                # Assign native value. If value is None, it means the calculation failed (which is handled by _run_analysis)
                 self._attr_native_value = value
                 self.last_update_success = True
-                _LOGGER.debug(f"updated '{self.entity_id}' to value: {value}")
-
+                
+                if value is not None:
+                     _LOGGER.debug(f"updated '{self.entity_id}' to value: {value}")
+                
             except Exception as exc:
-                # No data available
+                self._attr_native_value = None
                 self.last_update_success = False
                 _LOGGER.warning(
-                    f"Unable to update entity '{self.entity_id}', value: {value} and error: {exc}, data: {self.coordinator.data}"
+                    f"Unable to update entity '{self.entity_id}' due to calculation error: {exc}"
                 )
         else:
             _LOGGER.warning(
-                f"Unable to update entity '{self.entity_id}': No valid data for today available."
+                f"Unable to update entity '{self.entity_id}': No valid data for today available in coordinator."
             )
             self.last_update_success = False
+            self._attr_native_value = None
 
+
+        # Update extra state attributes for the average sensor (if applicable)
         try:
             if (
                 self.description.key == "avg_price"
@@ -270,8 +264,13 @@ class EntsoeSensor(CoordinatorEntity, RestoreSensor):
                 )
         except Exception as exc:
             _LOGGER.warning(
-                f"Unable to update attributes of the average entity, error: {exc}, data: {self.coordinator.data}"
+                f"Unable to update attributes of the average entity, error: {exc}"
             )
+        
+        # Tell HA to write the new state/value
+        # This is the standard way to trigger a state change in HA from the coordinator callback.
+        self.async_write_ha_state()
+
 
     @property
     def available(self) -> bool:

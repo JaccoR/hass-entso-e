@@ -38,6 +38,9 @@ from .const import (
     DOMAIN,
     ENERGY_SCALES,
     UNIQUE_ID,
+    CONF_PERIOD,
+    PERIOD_OPTIONS,
+    DEFAULT_PERIOD,
 )
 
 
@@ -102,6 +105,7 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
                     options={
                         CONF_API_KEY: user_input[CONF_API_KEY],
                         CONF_AREA: user_input[CONF_AREA],
+                        CONF_PERIOD: user_input[CONF_PERIOD],
                         CONF_MODIFYER: user_input[CONF_MODIFYER],
                         CONF_CURRENCY: user_input[CONF_CURRENCY],
                         CONF_ENERGY_SCALE: user_input[CONF_ENERGY_SCALE],
@@ -128,6 +132,9 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
                                 for country, info in AREA_INFO.items()
                             ]
                         ),
+                    ),
+                    vol.Required(CONF_PERIOD): SelectSelector(
+                        SelectSelectorConfig(options=PERIOD_OPTIONS),
                     ),
                     vol.Optional(CONF_ADVANCED_OPTIONS, default=False): bool,
                 },
@@ -316,7 +323,9 @@ class EntsoeOptionFlowHandler(OptionsFlow):
                     ): vol.All(vol.Coerce(float, "must be a number")),
                     vol.Optional(
                         CONF_MODIFYER,
-                        description={"suggested_value": self.config_entry.options[CONF_MODIFYER]},
+                        description={
+                            "suggested_value": self.config_entry.options[CONF_MODIFYER]
+                        },
                         default=DEFAULT_MODIFYER,
                     ): TemplateSelector(TemplateSelectorConfig()),
                     vol.Optional(
@@ -331,6 +340,12 @@ class EntsoeOptionFlowHandler(OptionsFlow):
                             CONF_ENERGY_SCALE, DEFAULT_ENERGY_SCALE
                         ),
                     ): vol.In(list(ENERGY_SCALES.keys())),
+                    vol.Optional(
+                        CONF_PERIOD,
+                        default=self.config_entry.options.get(
+                            CONF_PERIOD, DEFAULT_PERIOD
+                        ),
+                    ): vol.In(PERIOD_OPTIONS),
                     vol.Optional(
                         CONF_CALCULATION_MODE,
                         default=calculation_mode_default,

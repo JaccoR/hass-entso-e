@@ -3,11 +3,16 @@ from __future__ import annotations
 import enum
 import logging
 import xml.etree.ElementTree as ET
+from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Dict, Union
 
 import pytz
 import requests
+
+from custom_components.entsoe.const import DEFAULT_PERIOD
+from custom_components.entsoe.utils import get_interval_minutes
+from .utils import bucket_time
 
 _LOGGER = logging.getLogger(__name__)
 URL = "https://web-api.tp.entsoe.eu/api"
@@ -16,10 +21,11 @@ DATETIMEFORMAT = "%Y%m%d%H00"
 
 class EntsoeClient:
 
-    def __init__(self, api_key: str):
+    def __init__(self, api_key: str, period: str = DEFAULT_PERIOD) -> None:
         if api_key == "":
             raise TypeError("API key cannot be empty")
         self.api_key = api_key
+        self.configuration_period = period
 
     def _base_request(
         self, params: Dict, start: datetime, end: datetime
@@ -48,7 +54,7 @@ class EntsoeClient:
 
     def query_day_ahead_prices(
         self, country_code: Union[Area, str], start: datetime, end: datetime
-    ) -> str:
+    ) -> dict:
         """
         Parameters
         ----------
@@ -74,14 +80,16 @@ class EntsoeClient:
                 return dict(sorted(series.items()))
 
             except Exception as exc:
-                _LOGGER.debug(f"Failed to parse response content:{response.content}")
+                _LOGGER.debug(
+                    f"Failed to parse response content error: {exc} content:{response.content}"
+                )
                 raise exc
         else:
-            print(f"Failed to retrieve data: {response.status_code}")
+            _LOGGER.error(f"Failed to retrieve data: {response.status_code}")
             return None
 
     # lets process the received document
-    def parse_price_document(self, document: str) -> str:
+    def parse_price_document(self, document: str) -> dict:
 
         root = self._remove_namespace(ET.fromstring(document))
         _LOGGER.debug(f"content: {root}")
@@ -125,65 +133,64 @@ class EntsoeClient:
                     )
                     continue
 
-                if resolution == "PT60M":
-                    series.update(self.process_PT60M_points(period, start_time))
-                else:
-                    series.update(self.process_PT15M_points(period, start_time))
-
-                # Now fill in any missing hours
-                current_time = start_time
-                last_price = series[current_time]
-
-                while current_time < end_time:  # upto excluding! the endtime
-                    if current_time in series:
-                        last_price = series[current_time]  # Update to the current price
-                    else:
-                        _LOGGER.debug(
-                            f"Extending the price {last_price} of the previous hour to {current_time}"
-                        )
-                        series[current_time] = (
-                            last_price  # Fill with the last known price
-                        )
-                    current_time += timedelta(hours=1)
-
+                # Parse the resolution, we only support the 'PTxM' format
+                interval = get_interval_minutes(resolution)
+                data = self.process_points(period, start_time, interval)
+                if resolution != self.configuration_period:
+                    _LOGGER.debug(
+                        f"Got {interval} minutes interval prices, but period is configured on {self.configuration_period} minutes. Averaging data into intervals of {self.configuration_period} minutes."
+                    )
+                    data = self.average_to_interval(
+                        data,
+                        expected_interval=get_interval_minutes(
+                            self.configuration_period
+                        ),
+                    )
+                series.update(data)
         return series
 
     # processing hourly prices info -> thats easy
-    def process_PT60M_points(self, period: Element, start_time: datetime):
+    def process_points(
+        self, period: Element, start_time: datetime, interval: int
+    ) -> dict:
+        _LOGGER.debug(f"Processing prices based on interval {interval} minutes")
+        # Extract (position, price) pairs
+        points = sorted(
+            (int(p.findtext(".//position")), float(p.findtext(".//price.amount")))
+            for p in period.findall(".//Point")
+        )
+        if not points:
+            return {}
+
         data = {}
-        for point in period.findall(".//Point"):
-            position = point.find(".//position").text
-            price = point.find(".//price.amount").text
-            hour = int(position) - 1
-            time = start_time + timedelta(hours=hour)
-            data[time] = float(price)
+        last_price = None
+        for pos in range(points[0][0], points[-1][0] + 1):
+            if points and pos == points[0][0]:
+                last_price = points.pop(0)[1]
+            data[start_time + timedelta(minutes=(pos - 1) * interval)] = last_price
+
         return data
 
-    # processing quarterly prices -> this is more complex
-    def process_PT15M_points(self, period: Element, start_time: datetime):
-        positions = {}
+    def average_to_interval(self, data: dict, expected_interval: int) -> dict:
+        """
+        Average prices into the expected interval buckets
 
-        # first store all positions
-        for point in period.findall(".//Point"):
-            position = point.find(".//position").text
-            price = point.find(".//price.amount").text
-            positions[int(position)] = float(price)
+        args:
+            data: The data to average
+            expected_interval: The interval in minutes after transformation (e.g. 30, 60)
+        """
 
-        # now calculate hourly averages based on available points
-        data = {}
-        last_hour = (max(positions.keys()) + 3) // 4
-        last_price = 0
+        # Create buckets of expected_interval
+        by_hour = defaultdict(list)
+        for timestamp, price in data.items():
+            bucket = bucket_time(timestamp, expected_interval)
+            by_hour[bucket].append(price)
 
-        for hour in range(last_hour):
-            sum_prices = 0
-            for idx in range(hour * 4 + 1, hour * 4 + 5):
-                last_price = positions.get(idx, last_price)
-                sum_prices += last_price
-
-            time = start_time + timedelta(hours=hour)
-            data[time] = round(sum_prices / 4, 2)
-
-        return data
+        # Calculate the average for each bucket
+        return {
+            hour: round(sum(prices) / len(prices), 2)
+            for hour, prices in by_hour.items()
+        }
 
 
 class Area(enum.Enum):

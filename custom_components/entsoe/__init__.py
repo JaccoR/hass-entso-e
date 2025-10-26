@@ -20,6 +20,7 @@ from .const import (
     DEFAULT_MODIFYER,
     DEFAULT_ENERGY_SCALE,
     DOMAIN,
+    CONF_PERIOD,
 )
 from .coordinator import EntsoeCoordinator
 from .services import async_setup_services
@@ -42,6 +43,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Initialise the coordinator and save it as domain-data
     api_key = entry.options[CONF_API_KEY]
     area = entry.options[CONF_AREA]
+    period = entry.options.get(CONF_PERIOD, "PT60M")
     energy_scale = entry.options.get(CONF_ENERGY_SCALE, DEFAULT_ENERGY_SCALE)
     modifyer = entry.options.get(CONF_MODIFYER, DEFAULT_MODIFYER)
     vat = entry.options.get(CONF_VAT_VALUE, 0)
@@ -52,6 +54,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass,
         api_key=api_key,
         area=area,
+        period=period,
         energy_scale=energy_scale,
         modifyer=modifyer,
         calculation_mode=calculation_mode,

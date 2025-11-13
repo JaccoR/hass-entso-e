@@ -257,6 +257,13 @@ class EntsoeSensor(CoordinatorEntity, RestoreSensor):
             )
             self.last_update_success = False
 
+        # Ensure HA gets the new state after updating internal attributes
+        try:
+            self.async_write_ha_state()
+        except Exception:
+            # Writing state can occasionally fail during shutdown; ignore
+            pass
+
         try:
             if (
                 self.description.key == "avg_price"
@@ -280,3 +287,19 @@ class EntsoeSensor(CoordinatorEntity, RestoreSensor):
     def available(self) -> bool:
         """Return if entity is available."""
         return self.last_update_success
+
+    def _handle_coordinator_update(self) -> None:
+        """Handle updated data from the coordinator.
+
+        Schedule the entity update so it recalculates its state when the
+        coordinator receives new data.
+        """
+        # Run the async_update coroutine and write state when done.
+        async def _run_update() -> None:
+            try:
+                await self.async_update()
+            except Exception:
+                # async_update logs its own errors; don't raise here
+                pass
+
+        self.hass.async_create_task(_run_update())

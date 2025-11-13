@@ -153,8 +153,11 @@ async def async_setup_entry(
             )
         )
 
-    # Add an entity for each sensor type
-    async_add_entities(entities, True)
+    # Add an entity for each sensor type. Do not force an immediate update_before_add
+    # because that may trigger a coordinator sync and block Home Assistant startup.
+    # The coordinator's initial refresh runs in the background and entities will
+    # receive updates when data becomes available.
+    async_add_entities(entities, False)
 
 
 class EntsoeSensor(CoordinatorEntity, RestoreSensor):

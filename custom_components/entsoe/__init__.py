@@ -63,8 +63,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = entsoe_coordinator
 
-    # Fetch initial data, so we have data when entities subscribe and set up the platform
-    await entsoe_coordinator.async_config_entry_first_refresh()
+    # Start initial data fetch in background to avoid blocking Home Assistant startup
+    # If the API is slow or unreachable during startup we don't want to block the
+    # rest of Home Assistant. Entities will restore state until data is available.
+    hass.async_create_task(entsoe_coordinator.async_config_entry_first_refresh())
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(async_update_options))
 

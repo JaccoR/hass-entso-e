@@ -11,9 +11,9 @@ from homeassistant.helpers.template import Template
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt
 from jinja2 import pass_context
-from requests.exceptions import HTTPError
+import aiohttp
 
-from .api_client import EntsoeClient
+from .api_client import EntsoeClient, EntsoeAPIError
 from .const import AREA_INFO, CALCULATION_MODE, DEFAULT_MODIFYER, ENERGY_SCALES
 from .utils import get_interval_minutes, bucket_time
 
@@ -125,6 +125,13 @@ class EntsoeCoordinator(DataUpdateCoordinator):
             f"fetching prices for start date: {yesterday} to end date: {tomorrow_evening}"
         )
         data = await self.fetch_prices(yesterday, tomorrow_evening)
+        # Print out the raw response if no data is returned
+        if not data:
+            last_raw_response = getattr(self, '_last_raw_response', None)
+            if last_raw_response:
+                self.logger.warning(f"ENTSO-e API returned no data. Raw response: {last_raw_response[:1000]}")
+            else:
+                self.logger.warning("ENTSO-e API returned no data. No raw response available.")
         self.logger.debug(f"received data = {data}")
 
         if data is not None:
@@ -148,37 +155,58 @@ class EntsoeCoordinator(DataUpdateCoordinator):
     # ENTSO: new prices using an async job
     async def fetch_prices(self, start_date, end_date):
         try:
-            # run api_update in async job
-            resp = await self.hass.async_add_executor_job(
-                self.api_update, start_date, end_date, self.api_key
+            # Use the async EntsoeClient to perform the request using
+            # Home Assistant's aiohttp session. This avoids running blocking
+            # network calls in the executor and integrates with HA's event loop.
+            client = EntsoeClient(api_key=self.api_key, period=self.period)
+            self.logger.debug(
+                f"Fetching prices for {self.area} from {start_date} to {end_date}"
             )
+            resp, raw_text = await client.query_day_ahead_prices(
+                country_code=self.area, start=start_date, end=end_date, hass=self.hass
+            )
+            # Store the raw response text for diagnostics
+            self._last_raw_response = raw_text
+            self.logger.debug(f"Successfully fetched {len(resp)} price points")
             return resp
-
-        except HTTPError as exc:
-            if exc.response.status_code == 401:
+        except EntsoeAPIError as exc:
+            # HTTP errors from the ENTSO-e API
+            if exc.status_code == 401:
                 raise UpdateFailed("Unauthorized: Please check your API-key.") from exc
+            else:
+                raise UpdateFailed(
+                    f"ENTSO-e API error {exc.status_code}: {exc.response_text[:200]}"
+                ) from exc
+        except aiohttp.ClientError as exc:
+            # Network errors, timeouts, connection issues
+            raise UpdateFailed(f"Network error connecting to ENTSO-e API: {exc}") from exc
         except Exception as exc:
+            exc_type = type(exc).__name__
+            exc_repr = repr(exc)
+            last_response = getattr(exc, 'response_text', None)
+            if not exc_repr or exc_repr == "None":
+                exc_repr = "Unknown error (exception object was empty or None)"
             if self.data is not None:
                 newest_timestamp = self.data[max(self.data.keys())]
                 if (newest_timestamp) > dt.now():
                     self.logger.warning(
-                        f"Warning the integration is running in degraded mode (falling back on stored data) since fetching the latest ENTSOE-e prices failed with exception: {exc}."
+                        f"Warning the integration is running in degraded mode (falling back on stored data) since fetching the latest ENTSOE-e prices failed with exception type: {exc_type}, details: {exc_repr}. Last server response: {last_response}",
+                        exc_info=True
                     )
                 else:
                     raise UpdateFailed(
-                        f"The latest available data is older than the current time. Therefore entities will no longer update. Error: {exc}"
+                        f"The latest available data is older than the current time. Therefore entities will no longer update. Error type: {exc_type}, details: {exc_repr}. Last server response: {last_response}"
                     ) from exc
             else:
                 self.logger.warning(
-                    f"Warning the integration doesn't have any up to date local data this means that entities won't get updated but access remains to restorable entities: {exc}."
+                    f"Warning the integration doesn't have any up to date local data this means that entities won't get updated but access remains to restorable entities. Exception type: {exc_type}, details: {exc_repr}. Last server response: {last_response}",
+                    exc_info=True
                 )
 
     # ENTSO: the async fetch job itself
     def api_update(self, start_date, end_date, api_key):
-        client = EntsoeClient(api_key=api_key, period=self.period)
-        return client.query_day_ahead_prices(
-            country_code=self.area, start=start_date, end=end_date
-        )
+        # This method is deprecated; use fetch_prices async instead
+        pass
 
     # ENTSO: Return the data for the given date
     def get_data(self, date):

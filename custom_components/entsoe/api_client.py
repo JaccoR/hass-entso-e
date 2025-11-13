@@ -3,12 +3,15 @@ from __future__ import annotations
 import enum
 import logging
 import xml.etree.ElementTree as ET
+from xml.etree.ElementTree import Element
 from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Dict, Union
 
 import pytz
-import requests
+import aiohttp
+
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from custom_components.entsoe.const import DEFAULT_PERIOD
 from custom_components.entsoe.utils import get_interval_minutes
@@ -19,6 +22,17 @@ URL = "https://web-api.tp.entsoe.eu/api"
 DATETIMEFORMAT = "%Y%m%d%H00"
 
 
+class EntsoeAPIError(Exception):
+    """Exception raised when ENTSO-e API returns an error."""
+
+    def __init__(self, status_code: int, response_text: str):
+        self.status_code = status_code
+        self.response_text = response_text
+        super().__init__(
+            f"ENTSO-e API error {status_code}: {response_text[:200]}"
+        )
+
+
 class EntsoeClient:
 
     def __init__(self, api_key: str, period: str = DEFAULT_PERIOD) -> None:
@@ -27,10 +41,9 @@ class EntsoeClient:
         self.api_key = api_key
         self.configuration_period = period
 
-    def _base_request(
-        self, params: Dict, start: datetime, end: datetime
-    ) -> requests.Response:
-
+    async def _base_request(
+        self, params: Dict, start: datetime, end: datetime, hass
+    ) -> str:
         base_params = {
             "securityToken": self.api_key,
             "periodStart": start.strftime(DATETIMEFORMAT),
@@ -39,10 +52,21 @@ class EntsoeClient:
         params.update(base_params)
 
         _LOGGER.debug(f"Performing request to {URL} with params {params}")
-        response = requests.get(url=URL, params=params)
-        response.raise_for_status()  # Raise an HTTPError for bad responses (4xx or 5xx)
-
-        return response
+        session = async_get_clientsession(hass)
+        timeout = aiohttp.ClientTimeout(total=180)
+        # Use a short-lived response context to read the body and return the text.
+        # Returning the text avoids returning a closed ClientResponse object.
+        async with session.get(URL, params=params, timeout=timeout) as response:
+            text = await response.text()
+            if response.status != 200:
+                _LOGGER.error(
+                    f"ENTSO-e API returned error {response.status}: {text[:500]}"
+                )
+                raise EntsoeAPIError(response.status, text)
+            if not text.strip():
+                _LOGGER.warning(f"ENTSO-e API returned empty response for params: {params}")
+            # Return the raw response text for callers to parse and for diagnostics
+            return text
 
     def _remove_namespace(self, tree):
         """Remove namespaces in the passed XML tree for easier tag searching."""
@@ -52,8 +76,8 @@ class EntsoeClient:
                 elem.tag = elem.tag.split("}", 1)[1]
         return tree
 
-    def query_day_ahead_prices(
-        self, country_code: Union[Area, str], start: datetime, end: datetime
+    async def query_day_ahead_prices(
+        self, country_code: Union[Area, str], start: datetime, end: datetime, hass
     ) -> dict:
         """
         Parameters
@@ -72,21 +96,25 @@ class EntsoeClient:
             "in_Domain": area.code,
             "out_Domain": area.code,
         }
-        response = self._base_request(params=params, start=start, end=end)
+        # _base_request now returns the raw response text
+        raw_text = await self._base_request(params=params, start=start, end=end, hass=hass)
 
-        if response.status_code == 200:
-            try:
-                series = self.parse_price_document(response.content)
-                return dict(sorted(series.items()))
-
-            except Exception as exc:
-                _LOGGER.debug(
-                    f"Failed to parse response content error: {exc} content:{response.content}"
+        try:
+            if not raw_text:
+                _LOGGER.warning(
+                    f"ENTSO-e API response was empty. Last response text: {raw_text[:500]}"
                 )
-                raise exc
-        else:
-            _LOGGER.error(f"Failed to retrieve data: {response.status_code}")
-            return None
+            series = self.parse_price_document(raw_text)
+            _LOGGER.debug(f"Successfully parsed {len(series)} price points from response")
+            # Return parsed series and raw text for diagnostics by callers
+            return dict(sorted(series.items())), raw_text
+
+        except Exception as exc:
+            _LOGGER.error(
+                f"Failed to parse response content: {exc}. Last response text: {raw_text[:500]}",
+                exc_info=True,
+            )
+            raise
 
     # lets process the received document
     def parse_price_document(self, document: str) -> dict:

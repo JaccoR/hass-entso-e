@@ -129,6 +129,13 @@ def sensor_descriptions(
             icon="mdi:clock",
             value_fn=lambda coordinator: coordinator.get_min_time(),
         ),
+        EntsoeEntityDescription(
+            key="price_level",
+            name="Current price level",
+            icon="mdi:chart-bell-curve",
+            suggested_display_precision=None,
+            value_fn=lambda coordinator: coordinator.get_price_level(),
+        ),
     )
 
 
@@ -185,11 +192,16 @@ class EntsoeSensor(CoordinatorEntity, RestoreSensor):
 
         self.entity_description: EntsoeEntityDescription = description
         self._attr_icon = description.icon
-        self._attr_suggested_display_precision = (
-            description.suggested_display_precision
-            if description.suggested_display_precision is not None
-            else 2
-        )
+        # Only set suggested_display_precision if it's defined in the description
+        # For string sensors like price_level, it should remain None
+        if hasattr(description, 'suggested_display_precision'):
+            self._attr_suggested_display_precision = description.suggested_display_precision
+        else:
+            self._attr_suggested_display_precision = 2
+
+        # Remove attribution for price_level sensor (calculated value, not direct ENTSO-e data)
+        if description.key == "price_level":
+            self._attr_attribution = None
 
         self._attr_device_info = DeviceInfo(
             entry_type=DeviceEntryType.SERVICE,
@@ -271,6 +283,27 @@ class EntsoeSensor(CoordinatorEntity, RestoreSensor):
         except Exception as exc:
             _LOGGER.warning(
                 f"Unable to update attributes of the average entity, error: {exc}, data: {self.coordinator.data}"
+            )
+
+        try:
+            if (
+                self.description.key == "price_level"
+                and self._attr_native_value is not None
+                and self.coordinator.data is not None
+            ):
+                current_price = self.coordinator.get_current_price()
+                avg_price = self.coordinator.get_avg_price_today()
+                self._attr_extra_state_attributes = {
+                    "current_percentage": round((current_price / avg_price) * 100, 1) if avg_price and avg_price > 0 else None,
+                    "price_levels_today": self.coordinator.get_price_levels_today(),
+                    "price_levels_tomorrow": self.coordinator.get_price_levels_tomorrow(),
+                }
+                _LOGGER.debug(
+                    f"price level attributes updated: {self._attr_extra_state_attributes}"
+                )
+        except Exception as exc:
+            _LOGGER.warning(
+                f"Unable to update attributes of the price level entity, error: {exc}, data: {self.coordinator.data}"
             )
 
     @property

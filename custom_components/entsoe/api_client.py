@@ -39,7 +39,7 @@ class EntsoeClient:
         params.update(base_params)
 
         _LOGGER.debug(f"Performing request to {URL} with params {params}")
-        response = requests.get(url=URL, params=params)
+        response = requests.get(url=URL, params=params, timeout=30)
         response.raise_for_status()  # Raise an HTTPError for bad responses (4xx or 5xx)
 
         return response

@@ -1,7 +1,7 @@
 from homeassistant.const import CURRENCY_EURO
 
 ATTRIBUTION = "Data provided by ENTSO-e Transparency Platform"
-DOMAIN = "entsoe"
+DOMAIN = "entsoereloaded"
 UNIQUE_ID = f"{DOMAIN}_component"
 COMPONENT_TITLE = "ENTSO-e Transparency Platform"
 

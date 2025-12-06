@@ -1,6 +1,6 @@
 {
   "domain": "entsoereloaded",
-  "name": "ENTSO-e Transparency Platform",
+  "name": "ENTSO-e Transparency Platform Reloaded",
   "codeowners": ["@JaccoR"],
   "config_flow": true,
   "documentation": "https://github.com/JaccoR/hass-entso-e",

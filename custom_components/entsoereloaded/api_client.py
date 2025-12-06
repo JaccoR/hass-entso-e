@@ -13,8 +13,8 @@ import aiohttp
 
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from custom_components.entsoe.const import DEFAULT_PERIOD
-from custom_components.entsoe.utils import get_interval_minutes
+from custom_components.entsoereloaded.const import DEFAULT_PERIOD
+from custom_components.entsoereloaded.utils import get_interval_minutes
 from .utils import bucket_time
 
 _LOGGER = logging.getLogger(__name__)

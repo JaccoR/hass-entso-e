@@ -1,5 +1,5 @@
 {
-  "domain": "entsoe",
+  "domain": "entsoereloaded",
   "name": "ENTSO-e Transparency Platform",
   "codeowners": ["@JaccoR"],
   "config_flow": true,

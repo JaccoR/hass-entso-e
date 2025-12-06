@@ -213,6 +213,10 @@ class EntsoeSensor(CoordinatorEntity, RestoreSensor):
         """Get the latest data and updates the states."""
         # _LOGGER.debug(f"update function for '{self.entity_id} called.'")
 
+        # Safety check - entity may have been removed
+        if self.hass is None:
+            return
+
         # Cancel the currently scheduled event if there is any
         if self._unsub_update:
             self._unsub_update()
@@ -277,3 +281,10 @@ class EntsoeSensor(CoordinatorEntity, RestoreSensor):
     def available(self) -> bool:
         """Return if entity is available."""
         return self.last_update_success
+
+    async def async_will_remove_from_hass(self) -> None:
+        """Cancel any scheduled updates when entity is removed."""
+        if self._unsub_update:
+            self._unsub_update()
+            self._unsub_update = None
+        await super().async_will_remove_from_hass()

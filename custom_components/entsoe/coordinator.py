@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 import threading
+import time
 from datetime import timedelta
 from functools import cached_property
 
@@ -11,7 +13,7 @@ from homeassistant.helpers.template import Template
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt
 from jinja2 import pass_context
-from requests.exceptions import HTTPError
+from requests.exceptions import HTTPError, Timeout, ConnectionError as RequestsConnectionError
 
 from .api_client import EntsoeClient
 from .const import AREA_INFO, CALCULATION_MODE, DEFAULT_MODIFYER, ENERGY_SCALES
@@ -19,6 +21,10 @@ from .utils import get_interval_minutes, bucket_time
 
 # depending on timezone les than 24 hours could be returned.
 MIN_HOURS = 20
+
+# Timeout settings (connect_timeout, read_timeout) in seconds
+STARTUP_TIMEOUT = (5, 15)    # Faster timeout for startup - don't block HA boot
+DEFAULT_TIMEOUT = (10, 30)   # Normal timeout for scheduled updates
 
 
 # This class contains actually two main tasks
@@ -52,6 +58,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         self.calculator_last_sync = None
         self.filtered_hourprices = []
         self.lock = threading.Lock()
+        self._fetch_lock = asyncio.Lock()  # Prevent concurrent API calls
 
         # Check incase the sensor was setup using config flow.
         # This blow up if the template isnt valid.
@@ -109,31 +116,47 @@ class EntsoeCoordinator(DataUpdateCoordinator):
     # ENTSO: Triggered by HA to refresh the data (interval = 60 minutes)
     async def _async_update_data(self) -> dict:
         """Get the latest data from ENTSO-e"""
-        self.logger.debug("ENTSO-e DataUpdateCoordinator data update")
-        self.logger.debug(self.area)
-
-        now = dt.now()
-        self.today = now.replace(hour=0, minute=0, second=0, microsecond=0)
-        if self.check_update_needed(now) is False:
-            self.logger.debug("Skipping api fetch. All data is already available")
+        # Prevent concurrent fetches - if lock is held, skip this update
+        if self._fetch_lock.locked():
+            self.logger.debug("Fetch already in progress, skipping")
             return self.data
+        
+        async with self._fetch_lock:
+            self.logger.debug("ENTSO-e DataUpdateCoordinator data update started")
+            update_start = time.monotonic()
 
-        yesterday = self.today - timedelta(days=1)
-        tomorrow_evening = yesterday + timedelta(hours=71)
+            now = dt.now()
+            self.today = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            if self.check_update_needed(now) is False:
+                self.logger.debug("Skipping api fetch. All data is already available")
+                return self.data
 
-        self.logger.debug(
-            f"fetching prices for start date: {yesterday} to end date: {tomorrow_evening}"
-        )
-        data = await self.fetch_prices(yesterday, tomorrow_evening)
-        self.logger.debug(f"received data = {data}")
+            yesterday = self.today - timedelta(days=1)
+            tomorrow_evening = yesterday + timedelta(hours=71)
 
-        if data is not None:
-            parsed_data = self.parse_hourprices(data)
+            # Use faster timeout on startup (no data yet) to avoid blocking HA boot
+            timeout = STARTUP_TIMEOUT if self.data is None else DEFAULT_TIMEOUT
+            
             self.logger.debug(
-                f"received pricing data from entso-e for {len(data)} hours"
+                f"Fetching prices from {yesterday} to {tomorrow_evening} (timeout={timeout})"
             )
-            self.data = parsed_data
-            return parsed_data
+            data = await self.fetch_prices(yesterday, tomorrow_evening, timeout=timeout)
+
+            if data is not None:
+                parse_start = time.monotonic()
+                parsed_data = self.parse_hourprices(data)
+                parse_elapsed = time.monotonic() - parse_start
+                self.logger.debug(f"Price parsing completed in {parse_elapsed:.2f}s")
+                
+                self.data = parsed_data
+                total_elapsed = time.monotonic() - update_start
+                self.logger.debug(
+                    f"ENTSO-e update completed: {len(data)} prices in {total_elapsed:.2f}s total"
+                )
+                return parsed_data
+            else:
+                total_elapsed = time.monotonic() - update_start
+                self.logger.warning(f"ENTSO-e update failed after {total_elapsed:.2f}s")
 
     # ENTSO: check if we need to refresh the data. If we have None, or less than 20hrs left for today, or less than 20hrs tomorrow and its after 11
     def check_update_needed(self, now):
@@ -146,38 +169,44 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         return False
 
     # ENTSO: new prices using an async job
-    async def fetch_prices(self, start_date, end_date):
+    async def fetch_prices(self, start_date, end_date, timeout=None):
         try:
             # run api_update in async job
             resp = await self.hass.async_add_executor_job(
-                self.api_update, start_date, end_date, self.api_key
+                self.api_update, start_date, end_date, self.api_key, timeout
             )
             return resp
 
         except HTTPError as exc:
             if exc.response.status_code == 401:
                 raise UpdateFailed("Unauthorized: Please check your API-key.") from exc
+            self.logger.warning(f"HTTP error fetching ENTSO-e prices: {exc}")
+        except (Timeout, RequestsConnectionError) as exc:
+            self.logger.warning(f"Connection issue with ENTSO-e API: {exc}")
         except Exception as exc:
-            if self.data is not None:
-                newest_timestamp = self.data[max(self.data.keys())]
-                if (newest_timestamp) > dt.now():
-                    self.logger.warning(
-                        f"Warning the integration is running in degraded mode (falling back on stored data) since fetching the latest ENTSOE-e prices failed with exception: {exc}."
-                    )
-                else:
-                    raise UpdateFailed(
-                        f"The latest available data is older than the current time. Therefore entities will no longer update. Error: {exc}"
-                    ) from exc
-            else:
+            self.logger.warning(f"Unexpected error fetching ENTSO-e prices: {exc}")
+        
+        # Handle fallback for all non-auth errors
+        if self.data is not None:
+            newest_timestamp = max(self.data.keys())
+            if newest_timestamp > dt.now():
                 self.logger.warning(
-                    f"Warning the integration doesn't have any up to date local data this means that entities won't get updated but access remains to restorable entities: {exc}."
+                    "Running in degraded mode (using cached data) - ENTSO-e API unavailable"
                 )
+            else:
+                raise UpdateFailed(
+                    "Cached data is stale and ENTSO-e API is unavailable"
+                )
+        else:
+            self.logger.warning(
+                "No cached data available and ENTSO-e API is unavailable - entities won't update until API recovers"
+            )
 
     # ENTSO: the async fetch job itself
-    def api_update(self, start_date, end_date, api_key):
+    def api_update(self, start_date, end_date, api_key, timeout=None):
         client = EntsoeClient(api_key=api_key, period=self.period)
         return client.query_day_ahead_prices(
-            country_code=self.area, start=start_date, end=end_date
+            country_code=self.area, start=start_date, end=end_date, timeout=timeout
         )
 
     # ENTSO: Return the data for the given date
@@ -258,9 +287,11 @@ class EntsoeCoordinator(DataUpdateCoordinator):
                 self.logger.debug(
                     "The calculator needs to be synced with the current time"
                 )
-                if not self.data:
+                if not self.data and not self._fetch_lock.locked():
                     self.logger.debug("no data available yet, fetching data")
                     await self._async_update_data()
+                elif not self.data:
+                    self.logger.debug("no data yet, but fetch already in progress - skipping")
 
                 if self.today.date() != now.date():
                     self.logger.debug(
@@ -357,4 +388,4 @@ class EntsoeCoordinator(DataUpdateCoordinator):
                 for k, v in self.data.items()
                 if k.date() >= start_date.date() and k.date() <= end_date.date()
             }
-        return self.parse_hourprices(await self.fetch_prices(start_date, end_date))
+        return self.parse_hourprices(await self.fetch_prices(start_date, end_date, timeout=DEFAULT_TIMEOUT))

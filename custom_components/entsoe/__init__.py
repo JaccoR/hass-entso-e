@@ -63,8 +63,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = entsoe_coordinator
 
-    # Fetch initial data, so we have data when entities subscribe and set up the platform
-    await entsoe_coordinator.async_config_entry_first_refresh()
+    # Start data fetch in background - don't block HA startup
+    # Sensors will show "unavailable" until first data arrives
+    hass.async_create_task(
+        entsoe_coordinator.async_config_entry_first_refresh(),
+        f"ENTSO-e initial data fetch for {entry.entry_id}"
+    )
+    
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(async_update_options))
 

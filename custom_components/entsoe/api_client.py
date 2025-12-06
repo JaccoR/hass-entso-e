@@ -9,6 +9,8 @@ from typing import Dict, Union
 
 import pytz
 import requests
+import time
+from requests.exceptions import Timeout, ConnectionError as RequestsConnectionError
 
 from custom_components.entsoe.const import DEFAULT_PERIOD
 from custom_components.entsoe.utils import get_interval_minutes
@@ -17,6 +19,9 @@ from .utils import bucket_time
 _LOGGER = logging.getLogger(__name__)
 URL = "https://web-api.tp.entsoe.eu/api"
 DATETIMEFORMAT = "%Y%m%d%H00"
+
+# Timeout settings (connect_timeout, read_timeout) in seconds
+DEFAULT_TIMEOUT = (10, 30)  # 10s to connect, 30s to read
 
 
 class EntsoeClient:
@@ -28,7 +33,7 @@ class EntsoeClient:
         self.configuration_period = period
 
     def _base_request(
-        self, params: Dict, start: datetime, end: datetime
+        self, params: Dict, start: datetime, end: datetime, timeout: tuple = None
     ) -> requests.Response:
 
         base_params = {
@@ -38,11 +43,22 @@ class EntsoeClient:
         }
         params.update(base_params)
 
-        _LOGGER.debug(f"Performing request to {URL} with params {params}")
-        response = requests.get(url=URL, params=params)
-        response.raise_for_status()  # Raise an HTTPError for bad responses (4xx or 5xx)
-
-        return response
+        request_timeout = timeout or DEFAULT_TIMEOUT
+        _LOGGER.debug(f"Performing request to {URL} (timeout={request_timeout})")
+        
+        try:
+            start_time = time.monotonic()
+            response = requests.get(url=URL, params=params, timeout=request_timeout)
+            elapsed = time.monotonic() - start_time
+            _LOGGER.debug(f"API request completed in {elapsed:.2f}s (status={response.status_code})")
+            response.raise_for_status()  # Raise an HTTPError for bad responses (4xx or 5xx)
+            return response
+        except Timeout:
+            _LOGGER.error(f"Request to ENTSO-e API timed out after {request_timeout}s")
+            raise
+        except RequestsConnectionError as exc:
+            _LOGGER.error(f"Could not connect to ENTSO-e API: {exc}")
+            raise
 
     def _remove_namespace(self, tree):
         """Remove namespaces in the passed XML tree for easier tag searching."""
@@ -53,7 +69,7 @@ class EntsoeClient:
         return tree
 
     def query_day_ahead_prices(
-        self, country_code: Union[Area, str], start: datetime, end: datetime
+        self, country_code: Union[Area, str], start: datetime, end: datetime, timeout: tuple = None
     ) -> dict:
         """
         Parameters
@@ -61,6 +77,8 @@ class EntsoeClient:
         country_code : Area|str
         start : datetime
         end : datetime
+        timeout : tuple, optional
+            (connect_timeout, read_timeout) in seconds
 
         Returns
         -------
@@ -72,11 +90,14 @@ class EntsoeClient:
             "in_Domain": area.code,
             "out_Domain": area.code,
         }
-        response = self._base_request(params=params, start=start, end=end)
+        response = self._base_request(params=params, start=start, end=end, timeout=timeout)
 
         if response.status_code == 200:
             try:
+                start_time = time.monotonic()
                 series = self.parse_price_document(response.content)
+                elapsed = time.monotonic() - start_time
+                _LOGGER.debug(f"XML parsing completed in {elapsed:.2f}s ({len(series)} price points)")
                 return dict(sorted(series.items()))
 
             except Exception as exc:

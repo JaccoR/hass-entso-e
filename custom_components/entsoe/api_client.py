@@ -17,7 +17,7 @@ from custom_components.entsoe.utils import get_interval_minutes
 from .utils import bucket_time
 
 _LOGGER = logging.getLogger(__name__)
-URL = "https://web-api.tp.entsoe.eu/api"
+URL = "https://external-api.tp.entsoe.eu/api"
 DATETIMEFORMAT = "%Y%m%d%H00"
 
 

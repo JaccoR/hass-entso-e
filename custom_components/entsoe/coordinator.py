@@ -168,6 +168,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
                         f"The latest available data is older than the current time. Therefore entities will no longer update. Error: {exc}"
                     ) from exc
             else:
+                self.logger.error("Failed fetching data from Entso-e")
                 raise UpdateFailed("Fetching data from Entso-e failed.") from exc
                 # self.logger.warning(
                 #     f"Warning the integration doesn't have any up to date local data this means that entities won't get updated but access remains to restorable entities: {exc}."

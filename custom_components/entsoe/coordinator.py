@@ -5,6 +5,7 @@ import threading
 from datetime import timedelta
 from functools import cached_property
 
+import async_timeout
 import homeassistant.helpers.config_validation as cv
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.template import Template
@@ -28,15 +29,15 @@ class EntsoeCoordinator(DataUpdateCoordinator):
     """Get the latest data and update the states."""
 
     def __init__(
-        self,
-        hass: HomeAssistant,
-        api_key,
-        area,
-        period,
-        energy_scale,
-        modifyer,
-        calculation_mode=CALCULATION_MODE["default"],
-        VAT=0,
+            self,
+            hass: HomeAssistant,
+            api_key,
+            area,
+            period,
+            energy_scale,
+            modifyer,
+            calculation_mode=CALCULATION_MODE["default"],
+            VAT=0,
     ) -> None:
         """Initialize the data object."""
         self.hass = hass
@@ -48,7 +49,6 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         self.energy_scale = energy_scale
         self.calculation_mode = calculation_mode
         self.vat = VAT
-        self.today = None
         self.calculator_last_sync = None
         self.filtered_hourprices = []
         self.lock = threading.Lock()
@@ -113,19 +113,18 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         self.logger.debug(self.area)
 
         now = dt.now()
-        self.today = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        today = now.replace(hour=0, minute=0, second=0, microsecond=0)
         if self.check_update_needed(now) is False:
             self.logger.debug("Skipping api fetch. All data is already available")
             return self.data
 
-        yesterday = self.today - timedelta(days=1)
+        yesterday = today - timedelta(days=1)
         tomorrow_evening = yesterday + timedelta(hours=71)
 
-        self.logger.debug(
-            f"fetching prices for start date: {yesterday} to end date: {tomorrow_evening}"
-        )
+        self.logger.debug(f"fetching prices for start date: {yesterday} to end date: {tomorrow_evening}")
         data = await self.fetch_prices(yesterday, tomorrow_evening)
         self.logger.debug(f"received data = {data}")
+
 
         if data is not None:
             parsed_data = self.parse_hourprices(data)
@@ -148,11 +147,11 @@ class EntsoeCoordinator(DataUpdateCoordinator):
     # ENTSO: new prices using an async job
     async def fetch_prices(self, start_date, end_date):
         try:
-            # run api_update in async job
-            resp = await self.hass.async_add_executor_job(
-                self.api_update, start_date, end_date, self.api_key
-            )
-            return resp
+            async with async_timeout.timeout(10):
+                client = EntsoeClient(api_key=self.api_key, period=self.period)
+                return await client.query_day_ahead_prices(
+                    country_code=self.area, start=start_date, end=end_date
+                )
 
         except HTTPError as exc:
             if exc.response.status_code == 401:
@@ -169,16 +168,15 @@ class EntsoeCoordinator(DataUpdateCoordinator):
                         f"The latest available data is older than the current time. Therefore entities will no longer update. Error: {exc}"
                     ) from exc
             else:
-                self.logger.warning(
-                    f"Warning the integration doesn't have any up to date local data this means that entities won't get updated but access remains to restorable entities: {exc}."
-                )
+                self.logger.error("Failed fetching data from Entso-e")
+                raise UpdateFailed("Fetching data from Entso-e failed.") from exc
+                # self.logger.warning(
+                #     f"Warning the integration doesn't have any up to date local data this means that entities won't get updated but access remains to restorable entities: {exc}."
+                # )
 
-    # ENTSO: the async fetch job itself
-    def api_update(self, start_date, end_date, api_key):
-        client = EntsoeClient(api_key=api_key, period=self.period)
-        return client.query_day_ahead_prices(
-            country_code=self.area, start=start_date, end=end_date
-        )
+    @property
+    def today(self):
+        return dt.now().replace(hour=0, minute=0, second=0, microsecond=0)
 
     # ENTSO: Return the data for the given date
     def get_data(self, date):
@@ -295,7 +293,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
             return {ts: price for ts, price in self.data.items() if ts >= self.current_bucket_time}
         # publish >48 hrs of data = calculations made on all data of today and tomorrow (48 hrs)
         elif (
-            self.calculation_mode == CALCULATION_MODE["publish"] and len(self.data) > 48
+                self.calculation_mode == CALCULATION_MODE["publish"] and len(self.data) > 48
         ):
             return {ts: price for ts, price in self.data.items() if ts >= self.today}
         # publish <=48 hrs of data = calculations made on all data of yesterday and today (48 hrs)
@@ -348,8 +346,8 @@ class EntsoeCoordinator(DataUpdateCoordinator):
     async def get_energy_prices(self, start_date, end_date):
         # check if we have the data already
         if (
-            len(self.get_data(start_date)) > MIN_HOURS
-            and len(self.get_data(end_date)) > MIN_HOURS
+                len(self.get_data(start_date)) > MIN_HOURS
+                and len(self.get_data(end_date)) > MIN_HOURS
         ):
             self.logger.debug("return prices from coordinator cache.")
             return {

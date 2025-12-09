@@ -7,17 +7,21 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Dict, Union
 
+import aiohttp
 import pytz
 import requests
+from aiohttp import ClientResponse, ClientError
 
 from custom_components.entsoe.const import DEFAULT_PERIOD
 from custom_components.entsoe.utils import get_interval_minutes
 from .utils import bucket_time
 
 _LOGGER = logging.getLogger(__name__)
-URL = "https://web-api.tp.entsoe.eu/api"
+API_URLS = ["https://web-api.tp.entsoe.eu/api", "https://external-api.tp.entsoe.eu/api"]
 DATETIMEFORMAT = "%Y%m%d%H00"
 
+class EntsoeException(Exception):
+    pass
 
 class EntsoeClient:
 
@@ -27,9 +31,9 @@ class EntsoeClient:
         self.api_key = api_key
         self.configuration_period = period
 
-    def _base_request(
-        self, params: Dict, start: datetime, end: datetime
-    ) -> requests.Response:
+    async def _base_request(
+            self, params: Dict, start: datetime, end: datetime
+    ) -> ClientResponse:
 
         base_params = {
             "securityToken": self.api_key,
@@ -38,11 +42,16 @@ class EntsoeClient:
         }
         params.update(base_params)
 
-        _LOGGER.debug(f"Performing request to {URL} with params {params}")
-        response = requests.get(url=URL, params=params)
-        response.raise_for_status()  # Raise an HTTPError for bad responses (4xx or 5xx)
+        for url in API_URLS:
+            _LOGGER.warning(f"Performing request to {url} with params {params}")
+            async with aiohttp.ClientSession() as session:
+                try:
+                    return await session.get(url=url, params=params, raise_for_status=True)
+                except ClientError as e:
+                    _LOGGER.info(e)
+                    continue
 
-        return response
+        raise EntsoeException("All ENTSO-e API endpoints failed to respond with status 200.")
 
     def _remove_namespace(self, tree):
         """Remove namespaces in the passed XML tree for easier tag searching."""
@@ -52,8 +61,8 @@ class EntsoeClient:
                 elem.tag = elem.tag.split("}", 1)[1]
         return tree
 
-    def query_day_ahead_prices(
-        self, country_code: Union[Area, str], start: datetime, end: datetime
+    async def query_day_ahead_prices(
+            self, country_code: Union[Area, str], start: datetime, end: datetime
     ) -> dict:
         """
         Parameters
@@ -72,21 +81,17 @@ class EntsoeClient:
             "in_Domain": area.code,
             "out_Domain": area.code,
         }
-        response = self._base_request(params=params, start=start, end=end)
+        response = await self._base_request(params=params, start=start, end=end)
 
-        if response.status_code == 200:
-            try:
-                series = self.parse_price_document(response.content)
-                return dict(sorted(series.items()))
+        try:
+            series = self.parse_price_document(await response.text())
+            return dict(sorted(series.items()))
 
-            except Exception as exc:
-                _LOGGER.debug(
-                    f"Failed to parse response content error: {exc} content:{response.content}"
-                )
-                raise exc
-        else:
-            _LOGGER.error(f"Failed to retrieve data: {response.status_code}")
-            return None
+        except Exception as exc:
+            _LOGGER.debug(
+                f"Failed to parse response content error: {exc} content:{response.content}"
+            )
+            raise exc
 
     # lets process the received document
     def parse_price_document(self, document: str) -> dict:
@@ -151,7 +156,7 @@ class EntsoeClient:
 
     # processing hourly prices info -> thats easy
     def process_points(
-        self, period: Element, start_time: datetime, interval: int
+            self, period: Element, start_time: datetime, interval: int
     ) -> dict:
         _LOGGER.debug(f"Processing prices based on interval {interval} minutes")
         # Extract (position, price) pairs

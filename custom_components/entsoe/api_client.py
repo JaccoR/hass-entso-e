@@ -10,16 +10,18 @@ from typing import Dict, Union
 import aiohttp
 import pytz
 import requests
-from aiohttp import ClientResponse
+from aiohttp import ClientResponse, ClientError
 
 from custom_components.entsoe.const import DEFAULT_PERIOD
 from custom_components.entsoe.utils import get_interval_minutes
 from .utils import bucket_time
 
 _LOGGER = logging.getLogger(__name__)
-URL = "https://external-api.tp.entsoe.eu/api"
+API_URLS = ["https://web-api.tp.entsoe.eu/api", "https://external-api.tp.entsoe.eu/api"]
 DATETIMEFORMAT = "%Y%m%d%H00"
 
+class EntsoeException(Exception):
+    pass
 
 class EntsoeClient:
 
@@ -40,9 +42,16 @@ class EntsoeClient:
         }
         params.update(base_params)
 
-        _LOGGER.warning(f"Performing request to {URL} with params {params}")
-        async with aiohttp.ClientSession() as session:
-            return await session.get(url=URL, params=params, raise_for_status=True)
+        for url in API_URLS:
+            _LOGGER.warning(f"Performing request to {url} with params {params}")
+            async with aiohttp.ClientSession() as session:
+                try:
+                    return await session.get(url=url, params=params, raise_for_status=True)
+                except ClientError as e:
+                    _LOGGER.info(e)
+                    continue
+
+        raise EntsoeException("All ENTSO-e API endpoints failed to respond with status 200.")
 
     def _remove_namespace(self, tree):
         """Remove namespaces in the passed XML tree for easier tag searching."""

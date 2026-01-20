@@ -6,3 +6,22 @@ repos:
       - id: ruff-check
       - id: ruff-format
 
+  -   repo: https://github.com/pre-commit/pre-commit-hooks
+      rev: v6.0.0  # Use the ref you want to point at
+      hooks:
+        - id: check-added-large-files
+        - id: check-ast
+        - id: check-builtin-literals
+        - id: check-case-conflict
+        - id: check-executables-have-shebangs
+        - id: check-illegal-windows-names
+        - id: check-json
+        - id: check-shebang-scripts-are-executable
+        - id: check-symlinks
+        - id: check-toml
+        - id: check-xml
+        - id: check-yaml
+        - id: debug-statements
+        - id: detect-private-key
+        - id: no-commit-to-branch
+        - id: trailing-whitespace

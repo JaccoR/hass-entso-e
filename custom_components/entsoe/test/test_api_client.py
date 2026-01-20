@@ -6,7 +6,7 @@ sys.path.append(os.path.abspath("..\\"))
 
 from datetime import datetime
 
-from api_client import EntsoeClient
+from ..api_client import EntsoeClient  # noqa: TID252
 
 
 class TestDocumentParsing(unittest.TestCase):
@@ -17,7 +17,7 @@ class TestDocumentParsing(unittest.TestCase):
         return super().setUp()
 
     def test_be_60m(self):
-        with open(".\\datasets\\BE_60M.xml") as f:
+        with open("./datasets/BE_60M.xml") as f:
             data = f.read()
 
         self.maxDiff = None

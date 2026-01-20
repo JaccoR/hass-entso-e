@@ -4,12 +4,11 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry, ConfigFlow, OptionsFlow
 from homeassistant.core import callback
-from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers.selector import (
     SelectOptionDict,
     SelectSelector,
@@ -31,17 +30,20 @@ from .const import (
     CONF_ENERGY_SCALE,
     CONF_ENTITY_NAME,
     CONF_MODIFYER,
+    CONF_PERIOD,
     CONF_VAT_VALUE,
     DEFAULT_CURRENCY,
     DEFAULT_ENERGY_SCALE,
     DEFAULT_MODIFYER,
+    DEFAULT_PERIOD,
     DOMAIN,
     ENERGY_SCALES,
-    UNIQUE_ID,
-    CONF_PERIOD,
     PERIOD_OPTIONS,
-    DEFAULT_PERIOD,
+    UNIQUE_ID,
 )
+
+if TYPE_CHECKING:
+    from homeassistant.data_entry_flow import FlowResult
 
 
 class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
@@ -68,7 +70,8 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
         return EntsoeOptionFlowHandler()
 
     async def async_step_user(
-        self, user_input: dict[str, Any] | None = None
+        self,
+        user_input: dict[str, Any] | None = None,
     ) -> FlowResult:
         """Handle a flow initiated by the user."""
         errors = {}
@@ -86,7 +89,7 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
             try:
                 await self.async_set_unique_id(NAMED_UNIQUE_ID)
                 self._abort_if_unique_id_configured()
-            except Exception as e:
+            except Exception:
                 errors["base"] = "already_configured"
                 already_configured = True
 
@@ -122,7 +125,7 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
             data_schema=vol.Schema(
                 {
                     vol.Optional(CONF_ENTITY_NAME, default=""): vol.All(
-                        vol.Coerce(str)
+                        vol.Coerce(str),
                     ),
                     vol.Required(CONF_API_KEY): vol.All(vol.Coerce(str)),
                     vol.Required(CONF_AREA): SelectSelector(
@@ -130,7 +133,7 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
                             options=[
                                 SelectOptionDict(value=country, label=info["name"])
                                 for country, info in AREA_INFO.items()
-                            ]
+                            ],
                         ),
                     ),
                     vol.Required(CONF_PERIOD): SelectSelector(
@@ -157,7 +160,7 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
             try:
                 await self.async_set_unique_id(NAMED_UNIQUE_ID)
                 self._abort_if_unique_id_configured()
-            except Exception as e:
+            except Exception:
                 errors["base"] = "already_configured"
                 already_configured = True
 
@@ -168,7 +171,9 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
                 # Lets try to remove the most common mistakes, this will still fail if the template
                 # was writte in notepad or something like that..
                 user_input[CONF_MODIFYER] = re.sub(
-                    r"\s{2,}", "", user_input[CONF_MODIFYER]
+                    r"\s{2,}",
+                    "",
+                    user_input[CONF_MODIFYER],
                 )
             if user_input[CONF_CURRENCY] in (None, ""):
                 user_input[CONF_CURRENCY] = DEFAULT_CURRENCY
@@ -207,26 +212,29 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
             data_schema=vol.Schema(
                 {
                     vol.Optional(
-                        CONF_VAT_VALUE, default=AREA_INFO[self.area]["VAT"]
+                        CONF_VAT_VALUE,
+                        default=AREA_INFO[self.area]["VAT"],
                     ): vol.All(vol.Coerce(float, "must be a number")),
                     vol.Optional(CONF_MODIFYER, default=""): TemplateSelector(
-                        TemplateSelectorConfig()
+                        TemplateSelectorConfig(),
                     ),
                     vol.Optional(CONF_CURRENCY, default=DEFAULT_CURRENCY): vol.All(
-                        vol.Coerce(str)
+                        vol.Coerce(str),
                     ),
                     vol.Optional(
-                        CONF_ENERGY_SCALE, default=DEFAULT_ENERGY_SCALE
+                        CONF_ENERGY_SCALE,
+                        default=DEFAULT_ENERGY_SCALE,
                     ): vol.In(list(ENERGY_SCALES.keys())),
                     vol.Optional(
-                        CONF_CALCULATION_MODE, default=CALCULATION_MODE["default"]
+                        CONF_CALCULATION_MODE,
+                        default=CALCULATION_MODE["default"],
                     ): SelectSelector(
                         SelectSelectorConfig(
                             options=[
                                 SelectOptionDict(value=value, label=key)
                                 for key, value in CALCULATION_MODE.items()
                                 if key != "default"
-                            ]
+                            ],
                         ),
                     ),
                 },
@@ -235,19 +243,14 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
 
     async def _valid_template(self, user_template):
         try:
-            #
-            ut = Template(user_template, self.hass).async_render(
-                current_price=0
+            Template(user_template, self.hass).async_render(
+                current_price=0,
             )  # Add current price as 0 as we dont know it yet..
 
+        except Exception:
+            return False
+        else:
             return True
-            if isinstance(ut, float):
-                return True
-            else:
-                return False
-        except Exception as e:
-            pass
-        return False
 
 
 class EntsoeOptionFlowHandler(OptionsFlow):
@@ -264,7 +267,8 @@ class EntsoeOptionFlowHandler(OptionsFlow):
         return self.hass.config_entries.async_get_entry(self.handler)
 
     async def async_step_init(
-        self, user_input: dict[str, Any] | None = None
+        self,
+        user_input: dict[str, Any] | None = None,
     ) -> FlowResult:
         """Handle a flow initiated by the user."""
         errors = {}
@@ -278,7 +282,9 @@ class EntsoeOptionFlowHandler(OptionsFlow):
                 # Lets try to remove the most common mistakes, this will still fail if the template
                 # was written in notepad or something like that..
                 user_input[CONF_MODIFYER] = re.sub(
-                    r"\s{2,}", "", user_input[CONF_MODIFYER]
+                    r"\s{2,}",
+                    "",
+                    user_input[CONF_MODIFYER],
                 )
             if user_input[CONF_CURRENCY] in (None, ""):
                 user_input[CONF_CURRENCY] = DEFAULT_CURRENCY
@@ -296,7 +302,8 @@ class EntsoeOptionFlowHandler(OptionsFlow):
                 errors["base"] = "invalid_template"
 
         calculation_mode_default = self.config_entry.options.get(
-            CONF_CALCULATION_MODE, CALCULATION_MODE["default"]
+            CONF_CALCULATION_MODE,
+            CALCULATION_MODE["default"],
         )
 
         return self.async_show_form(
@@ -305,16 +312,18 @@ class EntsoeOptionFlowHandler(OptionsFlow):
             data_schema=vol.Schema(
                 {
                     vol.Required(
-                        CONF_API_KEY, default=self.config_entry.options[CONF_API_KEY]
+                        CONF_API_KEY,
+                        default=self.config_entry.options[CONF_API_KEY],
                     ): vol.All(vol.Coerce(str)),
                     vol.Required(
-                        CONF_AREA, default=self.config_entry.options[CONF_AREA]
+                        CONF_AREA,
+                        default=self.config_entry.options[CONF_AREA],
                     ): SelectSelector(
                         SelectSelectorConfig(
                             options=[
                                 SelectOptionDict(value=country, label=info["name"])
                                 for country, info in AREA_INFO.items()
-                            ]
+                            ],
                         ),
                     ),
                     vol.Optional(
@@ -324,26 +333,29 @@ class EntsoeOptionFlowHandler(OptionsFlow):
                     vol.Optional(
                         CONF_MODIFYER,
                         description={
-                            "suggested_value": self.config_entry.options[CONF_MODIFYER]
+                            "suggested_value": self.config_entry.options[CONF_MODIFYER],
                         },
                         default=DEFAULT_MODIFYER,
                     ): TemplateSelector(TemplateSelectorConfig()),
                     vol.Optional(
                         CONF_CURRENCY,
                         default=self.config_entry.options.get(
-                            CONF_CURRENCY, DEFAULT_CURRENCY
+                            CONF_CURRENCY,
+                            DEFAULT_CURRENCY,
                         ),
                     ): vol.All(vol.Coerce(str)),
                     vol.Optional(
                         CONF_ENERGY_SCALE,
                         default=self.config_entry.options.get(
-                            CONF_ENERGY_SCALE, DEFAULT_ENERGY_SCALE
+                            CONF_ENERGY_SCALE,
+                            DEFAULT_ENERGY_SCALE,
                         ),
                     ): vol.In(list(ENERGY_SCALES.keys())),
                     vol.Optional(
                         CONF_PERIOD,
                         default=self.config_entry.options.get(
-                            CONF_PERIOD, DEFAULT_PERIOD
+                            CONF_PERIOD,
+                            DEFAULT_PERIOD,
                         ),
                     ): vol.In(PERIOD_OPTIONS),
                     vol.Optional(
@@ -355,7 +367,7 @@ class EntsoeOptionFlowHandler(OptionsFlow):
                                 SelectOptionDict(value=value, label=key)
                                 for key, value in CALCULATION_MODE.items()
                                 if key != "default"
-                            ]
+                            ],
                         ),
                     ),
                 },
@@ -364,16 +376,10 @@ class EntsoeOptionFlowHandler(OptionsFlow):
 
     async def _valid_template(self, user_template):
         try:
-            #
-            ut = Template(user_template, self.hass).async_render(
-                current_price=0
+            Template(user_template, self.hass).async_render(
+                current_price=0,
             )  # Add current price as 0 as we dont know it yet..
-
+        except Exception:
+            return False
+        else:
             return True
-            if isinstance(ut, float):
-                return True
-            else:
-                return False
-        except Exception as e:
-            pass
-        return False

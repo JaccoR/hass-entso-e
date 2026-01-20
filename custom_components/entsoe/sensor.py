@@ -3,28 +3,22 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.sensor import (
-    DOMAIN,
     RestoreSensor,
     SensorDeviceClass,
     SensorEntityDescription,
     SensorStateClass,
 )
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import PERCENTAGE
 from homeassistant.core import HassJob, HomeAssistant
 from homeassistant.helpers import event
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.typing import StateType
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import utcnow
 
-from .utils import bucket_time
 from .const import (
     ATTRIBUTION,
     CONF_CURRENCY,
@@ -34,8 +28,16 @@ from .const import (
     DEFAULT_ENERGY_SCALE,
     DOMAIN,
 )
-from .coordinator import EntsoeCoordinator
-from .utils import get_interval_minutes
+from .utils import bucket_time
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from homeassistant.config_entries import ConfigEntry
+    from homeassistant.helpers.entity_platform import AddEntitiesCallback
+    from homeassistant.helpers.typing import StateType
+
+    from .coordinator import EntsoeCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -48,7 +50,8 @@ class EntsoeEntityDescription(SensorEntityDescription):
 
 
 def sensor_descriptions(
-    currency: str, energy_scale: str
+    currency: str,
+    energy_scale: str,
 ) -> tuple[EntsoeEntityDescription, ...]:
     """Construct EntsoeEntityDescription."""
     return (
@@ -149,12 +152,14 @@ async def async_setup_entry(
         entity = description
         entities.append(
             EntsoeSensor(
-                entsoe_coordinator, entity, config_entry.options[CONF_ENTITY_NAME]
-            )
+                entsoe_coordinator,
+                entity,
+                config_entry.options[CONF_ENTITY_NAME],
+            ),
         )
 
     # Add an entity for each sensor type
-    async_add_entities(entities, True)
+    async_add_entities(entities, update_before_add=True)
 
 
 class EntsoeSensor(CoordinatorEntity, RestoreSensor):
@@ -197,7 +202,7 @@ class EntsoeSensor(CoordinatorEntity, RestoreSensor):
                 (
                     DOMAIN,
                     f"{coordinator.config_entry.entry_id}_entsoe",
-                )
+                ),
             },
             manufacturer="entso-e",
             model="",
@@ -211,8 +216,6 @@ class EntsoeSensor(CoordinatorEntity, RestoreSensor):
 
     async def async_update(self) -> None:
         """Get the latest data and updates the states."""
-        # _LOGGER.debug(f"update function for '{self.entity_id} called.'")
-
         # Cancel the currently scheduled event if there is any
         if self._unsub_update:
             self._unsub_update()
@@ -235,7 +238,6 @@ class EntsoeSensor(CoordinatorEntity, RestoreSensor):
         ):
             value: Any = None
             try:
-                # _LOGGER.debug(f"current coordinator.data value: {self.coordinator.data}")
                 value = self.entity_description.value_fn(self.coordinator)
 
                 self._attr_native_value = value
@@ -246,11 +248,11 @@ class EntsoeSensor(CoordinatorEntity, RestoreSensor):
                 # No data available
                 self.last_update_success = False
                 _LOGGER.warning(
-                    f"Unable to update entity '{self.entity_id}', value: {value} and error: {exc}, data: {self.coordinator.data}"
+                    f"Unable to update entity '{self.entity_id}', value: {value} and error: {exc}, data: {self.coordinator.data}",
                 )
         else:
             _LOGGER.warning(
-                f"Unable to update entity '{self.entity_id}': No valid data for today available."
+                f"Unable to update entity '{self.entity_id}': No valid data for today available.",
             )
             self.last_update_success = False
 
@@ -266,11 +268,11 @@ class EntsoeSensor(CoordinatorEntity, RestoreSensor):
                     "prices": self.coordinator.get_prices(),
                 }
                 _LOGGER.debug(
-                    f"attributes updated: {self._attr_extra_state_attributes}"
+                    f"attributes updated: {self._attr_extra_state_attributes}",
                 )
         except Exception as exc:
             _LOGGER.warning(
-                f"Unable to update attributes of the average entity, error: {exc}, data: {self.coordinator.data}"
+                f"Unable to update attributes of the average entity, error: {exc}, data: {self.coordinator.data}",
             )
 
     @property

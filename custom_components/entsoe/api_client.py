@@ -1,30 +1,30 @@
 from __future__ import annotations
 
+from collections import defaultdict
+from datetime import datetime, timedelta
 import enum
 import logging
 import xml.etree.ElementTree as ET
-from collections import defaultdict
-from datetime import datetime, timedelta
-from typing import Dict, Union
 
 import aiohttp
+from aiohttp import ClientError, ClientResponse
 import pytz
-import requests
-from aiohttp import ClientResponse, ClientError
 
 from custom_components.entsoe.const import DEFAULT_PERIOD
 from custom_components.entsoe.utils import get_interval_minutes
+
 from .utils import bucket_time
 
 _LOGGER = logging.getLogger(__name__)
 API_URLS = ["https://web-api.tp.entsoe.eu/api", "https://external-api.tp.entsoe.eu/api"]
 DATETIMEFORMAT = "%Y%m%d%H00"
 
+
 class EntsoeException(Exception):
     pass
 
-class EntsoeClient:
 
+class EntsoeClient:
     def __init__(self, api_key: str, period: str = DEFAULT_PERIOD) -> None:
         if api_key == "":
             raise TypeError("API key cannot be empty")
@@ -32,9 +32,11 @@ class EntsoeClient:
         self.configuration_period = period
 
     async def _base_request(
-            self, params: Dict, start: datetime, end: datetime
+        self,
+        params: dict,
+        start: datetime,
+        end: datetime,
     ) -> ClientResponse:
-
         base_params = {
             "securityToken": self.api_key,
             "periodStart": start.strftime(DATETIMEFORMAT),
@@ -46,12 +48,18 @@ class EntsoeClient:
             _LOGGER.debug(f"Performing request to {url} with params {params}")
             async with aiohttp.ClientSession() as session:
                 try:
-                    return await session.get(url=url, params=params, raise_for_status=True)
+                    return await session.get(
+                        url=url,
+                        params=params,
+                        raise_for_status=True,
+                    )
                 except ClientError as e:
                     _LOGGER.info(e)
                     continue
 
-        raise EntsoeException("All ENTSO-e API endpoints failed to respond with status 200.")
+        raise EntsoeException(
+            "All ENTSO-e API endpoints failed to respond with status 200.",
+        )
 
     def _remove_namespace(self, tree):
         """Remove namespaces in the passed XML tree for easier tag searching."""
@@ -62,10 +70,12 @@ class EntsoeClient:
         return tree
 
     async def query_day_ahead_prices(
-            self, country_code: Union[Area, str], start: datetime, end: datetime
+        self,
+        country_code: Area | str,
+        start: datetime,
+        end: datetime,
     ) -> dict:
-        """
-        Parameters
+        """Parameters
         ----------
         country_code : Area|str
         start : datetime
@@ -74,6 +84,7 @@ class EntsoeClient:
         Returns
         -------
         str
+
         """
         area = Area[country_code.upper()]
         params = {
@@ -89,13 +100,12 @@ class EntsoeClient:
 
         except Exception as exc:
             _LOGGER.debug(
-                f"Failed to parse response content error: {exc} content:{response.content}"
+                f"Failed to parse response content error: {exc} content:{response.content}",
             )
             raise exc
 
     # lets process the received document
     def parse_price_document(self, document: str) -> dict:
-
         root = self._remove_namespace(ET.fromstring(document))
         _LOGGER.debug(f"content: {root}")
         series = {}
@@ -104,11 +114,13 @@ class EntsoeClient:
         # There may be overlapping times in the repsonse. For now we skip timeseries which we already processed
         for timeseries in root.findall(".//TimeSeries"):
             # For germany, discard if sequence != 1
-            if timeseries.find(".//out_Domain.mRID").text == Area['DE_LU'].code:
-                sequence = timeseries.find(".//classificationSequence_AttributeInstanceComponent.position")
-                if sequence is not None  and sequence.text != '1':
+            if timeseries.find(".//out_Domain.mRID").text == Area["DE_LU"].code:
+                sequence = timeseries.find(
+                    ".//classificationSequence_AttributeInstanceComponent.position",
+                )
+                if sequence is not None and sequence.text != "1":
                     continue
-            
+
             # for all periods in this timeseries.....-> we still asume the time intervals do not overlap, and are in sequence
             for period in timeseries.findall(".//Period"):
                 # there can be different resolutions for each period (BE casus in which historical is quarterly and future is hourly)
@@ -135,11 +147,11 @@ class EntsoeClient:
                     .astimezone()
                 )
                 _LOGGER.debug(
-                    f"Period found is from {start_time} till {end_time} with resolution {resolution}"
+                    f"Period found is from {start_time} till {end_time} with resolution {resolution}",
                 )
                 if start_time in series:
                     _LOGGER.debug(
-                        "We found a duplicate period in the response, possibly with another resolution. We skip this period"
+                        "We found a duplicate period in the response, possibly with another resolution. We skip this period",
                     )
                     continue
 
@@ -148,12 +160,12 @@ class EntsoeClient:
                 data = self.process_points(period, start_time, interval)
                 if resolution != self.configuration_period:
                     _LOGGER.debug(
-                        f"Got {interval} minutes interval prices, but period is configured on {self.configuration_period} minutes. Averaging data into intervals of {self.configuration_period} minutes."
+                        f"Got {interval} minutes interval prices, but period is configured on {self.configuration_period} minutes. Averaging data into intervals of {self.configuration_period} minutes.",
                     )
                     data = self.average_to_interval(
                         data,
                         expected_interval=get_interval_minutes(
-                            self.configuration_period
+                            self.configuration_period,
                         ),
                     )
                 series.update(data)
@@ -161,7 +173,10 @@ class EntsoeClient:
 
     # processing hourly prices info -> thats easy
     def process_points(
-            self, period: Element, start_time: datetime, interval: int
+        self,
+        period: ET.Element,
+        start_time: datetime,
+        interval: int,
     ) -> dict:
         _LOGGER.debug(f"Processing prices based on interval {interval} minutes")
         # Extract (position, price) pairs
@@ -182,14 +197,13 @@ class EntsoeClient:
         return data
 
     def average_to_interval(self, data: dict, expected_interval: int) -> dict:
-        """
-        Average prices into the expected interval buckets
+        """Average prices into the expected interval buckets
 
-        args:
+        Args:
             data: The data to average
             expected_interval: The interval in minutes after transformation (e.g. 30, 60)
-        """
 
+        """
         # Create buckets of expected_interval
         by_hour = defaultdict(list)
         for timestamp, price in data.items():
@@ -204,9 +218,7 @@ class EntsoeClient:
 
 
 class Area(enum.Enum):
-    """
-    ENUM containing 3 things about an Area: CODE, Meaning, Timezone
-    """
+    """ENUM containing 3 things about an Area: CODE, Meaning, Timezone"""
 
     def __new__(cls, *args, **kwds):
         obj = object.__new__(cls)

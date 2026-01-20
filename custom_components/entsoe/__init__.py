@@ -13,14 +13,14 @@ from .const import (
     CALCULATION_MODE,
     CONF_API_KEY,
     CONF_AREA,
-    CONF_ENERGY_SCALE,
     CONF_CALCULATION_MODE,
+    CONF_ENERGY_SCALE,
     CONF_MODIFYER,
-    CONF_VAT_VALUE,
-    DEFAULT_MODIFYER,
-    DEFAULT_ENERGY_SCALE,
-    DOMAIN,
     CONF_PERIOD,
+    CONF_VAT_VALUE,
+    DEFAULT_ENERGY_SCALE,
+    DEFAULT_MODIFYER,
+    DOMAIN,
 )
 from .coordinator import EntsoeCoordinator
 from .services import async_setup_services
@@ -31,7 +31,6 @@ PLATFORMS = [Platform.SENSOR]
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up ENTSO-e services."""
-
     async_setup_services(hass)
 
     return True
@@ -39,7 +38,6 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up the ENTSO-e prices component from a config entry."""
-
     # Initialise the coordinator and save it as domain-data
     api_key = entry.options[CONF_API_KEY]
     area = entry.options[CONF_AREA]
@@ -48,7 +46,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     modifyer = entry.options.get(CONF_MODIFYER, DEFAULT_MODIFYER)
     vat = entry.options.get(CONF_VAT_VALUE, 0)
     calculation_mode = entry.options.get(
-        CONF_CALCULATION_MODE, CALCULATION_MODE["default"]
+        CONF_CALCULATION_MODE,
+        CALCULATION_MODE["default"],
     )
     entsoe_coordinator = EntsoeCoordinator(
         hass,

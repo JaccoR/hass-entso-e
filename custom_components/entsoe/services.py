@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-import logging
-from datetime import date, datetime
 from functools import partial
-from typing import Final
+import logging
+from typing import TYPE_CHECKING, Final
 
-import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.core import (
     HomeAssistant,
@@ -19,9 +17,14 @@ from homeassistant.core import (
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import selector
 from homeassistant.util import dt as dt_util
+import voluptuous as vol
 
 from .const import DOMAIN
-from .coordinator import EntsoeCoordinator
+
+if TYPE_CHECKING:
+    from datetime import date, datetime
+
+    from .coordinator import EntsoeCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -35,11 +38,11 @@ SERVICE_SCHEMA: Final = vol.Schema(
         vol.Required(ATTR_CONFIG_ENTRY): selector.ConfigEntrySelector(
             {
                 "integration": DOMAIN,
-            }
+            },
         ),
         vol.Optional(ATTR_START): str,
         vol.Optional(ATTR_END): str,
-    }
+    },
 )
 
 
@@ -66,7 +69,7 @@ def __serialize_prices(prices) -> ServiceResponse:
         "prices": [
             {"timestamp": dt.isoformat(), "price": price}
             for dt, price in prices.items()
-        ]
+        ],
     }
 
 
@@ -117,7 +120,6 @@ async def __get_prices(
 @callback
 def async_setup_services(hass: HomeAssistant) -> None:
     """Set up Entso-e services."""
-
     hass.services.async_register(
         DOMAIN,
         ENERGY_SERVICE_NAME,

@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
-from dataclasses import dataclass
 import logging
-from typing import Any
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.sensor import (
     RestoreSensor,
@@ -13,13 +12,10 @@ from homeassistant.components.sensor import (
     SensorEntityDescription,
     SensorStateClass,
 )
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import PERCENTAGE
 from homeassistant.core import HassJob, HomeAssistant
 from homeassistant.helpers import event
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.typing import StateType
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import utcnow
 
@@ -32,8 +28,16 @@ from .const import (
     DEFAULT_ENERGY_SCALE,
     DOMAIN,
 )
-from .coordinator import EntsoeCoordinator
 from .utils import bucket_time
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from homeassistant.config_entries import ConfigEntry
+    from homeassistant.helpers.entity_platform import AddEntitiesCallback
+    from homeassistant.helpers.typing import StateType
+
+    from .coordinator import EntsoeCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 

@@ -3,11 +3,9 @@
 from __future__ import annotations
 
 import logging
+from typing import TYPE_CHECKING
 
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers.typing import ConfigType
 
 from .const import (
     CALCULATION_MODE,
@@ -25,11 +23,16 @@ from .const import (
 from .coordinator import EntsoeCoordinator
 from .services import async_setup_services
 
+if TYPE_CHECKING:
+    from homeassistant.config_entries import ConfigEntry
+    from homeassistant.core import HomeAssistant
+    from homeassistant.helpers.typing import ConfigType
+
 _LOGGER = logging.getLogger(__name__)
 PLATFORMS = [Platform.SENSOR]
 
 
-async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+async def async_setup(hass: HomeAssistant, _config: ConfigType) -> bool:
     """Set up ENTSO-e services."""
     async_setup_services(hass)
 

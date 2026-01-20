@@ -1,5 +1,5 @@
-from datetime import timedelta
 import re
+from datetime import timedelta
 
 
 def get_interval_minutes(iso8601_interval: str) -> int:

@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-from collections import defaultdict
-from datetime import datetime, timedelta
 import enum
 import logging
 import xml.etree.ElementTree as ET
+from collections import defaultdict
+from datetime import datetime, timedelta
 
 import aiohttp
-from aiohttp import ClientError, ClientResponse
 import pytz
+from aiohttp import ClientError, ClientResponse
 
 from custom_components.entsoe.const import DEFAULT_PERIOD
 from custom_components.entsoe.utils import get_interval_minutes
@@ -27,7 +27,8 @@ class EntsoeException(Exception):
 class EntsoeClient:
     def __init__(self, api_key: str, period: str = DEFAULT_PERIOD) -> None:
         if api_key == "":
-            raise TypeError("API key cannot be empty")
+            msg = "API key cannot be empty"
+            raise TypeError(msg)
         self.api_key = api_key
         self.configuration_period = period
 
@@ -57,8 +58,9 @@ class EntsoeClient:
                     _LOGGER.info(e)
                     continue
 
+        msg = "All ENTSO-e API endpoints failed to respond with status 200."
         raise EntsoeException(
-            "All ENTSO-e API endpoints failed to respond with status 200.",
+            msg,
         )
 
     def _remove_namespace(self, tree):
@@ -102,7 +104,7 @@ class EntsoeClient:
             _LOGGER.debug(
                 f"Failed to parse response content error: {exc} content:{response.content}",
             )
-            raise exc
+            raise
 
     # lets process the received document
     def parse_price_document(self, document: str) -> dict:
@@ -127,7 +129,7 @@ class EntsoeClient:
                 resolution = period.find(".//resolution").text
 
                 # for now supporting 60 and 15 minutes resolutions (ISO8601 defined)
-                if resolution == "PT60M" or resolution == "PT1H":
+                if resolution in {"PT60M", "PT1H"}:
                     resolution = "PT60M"
                 elif resolution != "PT15M":
                     continue

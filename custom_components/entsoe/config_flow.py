@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
+import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry, ConfigFlow, OptionsFlow
 from homeassistant.core import callback
-from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers.selector import (
     SelectOptionDict,
     SelectSelector,
@@ -17,7 +17,6 @@ from homeassistant.helpers.selector import (
     TemplateSelectorConfig,
 )
 from homeassistant.helpers.template import Template
-import voluptuous as vol
 
 from .const import (
     AREA_INFO,
@@ -42,6 +41,9 @@ from .const import (
     PERIOD_OPTIONS,
     UNIQUE_ID,
 )
+
+if TYPE_CHECKING:
+    from homeassistant.data_entry_flow import FlowResult
 
 
 class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
@@ -241,17 +243,14 @@ class EntsoeFlowHandler(ConfigFlow, domain=DOMAIN):
 
     async def _valid_template(self, user_template):
         try:
-            ut = Template(user_template, self.hass).async_render(
+            Template(user_template, self.hass).async_render(
                 current_price=0,
             )  # Add current price as 0 as we dont know it yet..
 
-            return True
-            if isinstance(ut, float):
-                return True
-            return False
         except Exception:
-            pass
-        return False
+            return False
+        else:
+            return True
 
 
 class EntsoeOptionFlowHandler(OptionsFlow):
@@ -377,14 +376,10 @@ class EntsoeOptionFlowHandler(OptionsFlow):
 
     async def _valid_template(self, user_template):
         try:
-            ut = Template(user_template, self.hass).async_render(
+            Template(user_template, self.hass).async_render(
                 current_price=0,
             )  # Add current price as 0 as we dont know it yet..
-
-            return True
-            if isinstance(ut, float):
-                return True
-            return False
         except Exception:
-            pass
-        return False
+            return False
+        else:
+            return True

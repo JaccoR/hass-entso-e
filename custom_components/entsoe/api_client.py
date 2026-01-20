@@ -103,7 +103,12 @@ class EntsoeClient:
         # for all given timeseries in this response
         # There may be overlapping times in the repsonse. For now we skip timeseries which we already processed
         for timeseries in root.findall(".//TimeSeries"):
-
+            # For germany, discard if sequence != 1
+            if timeseries.find(".//out_Domain.mRID").text == Area['DE_LU'].code:
+                sequence = timeseries.find(".//classificationSequence_AttributeInstanceComponent.position")
+                if sequence is not None  and sequence.text != '1':
+                    continue
+            
             # for all periods in this timeseries.....-> we still asume the time intervals do not overlap, and are in sequence
             for period in timeseries.findall(".//Period"):
                 # there can be different resolutions for each period (BE casus in which historical is quarterly and future is hourly)

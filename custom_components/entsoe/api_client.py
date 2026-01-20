@@ -43,7 +43,7 @@ class EntsoeClient:
         params.update(base_params)
 
         for url in API_URLS:
-            _LOGGER.warning(f"Performing request to {url} with params {params}")
+            _LOGGER.debug(f"Performing request to {url} with params {params}")
             async with aiohttp.ClientSession() as session:
                 try:
                     return await session.get(url=url, params=params, raise_for_status=True)

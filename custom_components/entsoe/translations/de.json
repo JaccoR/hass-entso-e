@@ -68,5 +68,19 @@
         }
       }
     }
+  },
+  "entity": {
+    "sensor": {
+      "price_level": {
+        "name": "Aktuelles Preisniveau",
+        "state": {
+          "very_cheap": "Sehr Günstig",
+          "cheap": "Günstig",
+          "normal": "Normal",
+          "expensive": "Teuer",
+          "very_expensive": "Sehr Teuer"
+        }
+      }
+    }
   }
 }

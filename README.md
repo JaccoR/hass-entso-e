@@ -20,20 +20,20 @@ The integration adds the following sensors:
 - Next Hour Day-Ahead Electricity Price
 - Time Of Highest Energy Price Today
 - Time Of Lowest Energy Price Today
-  
+
 ------
 ## Installation
 
 ### HACS
 
-Search for "ENTSO-e" when adding HACS integrations and add "ENTSO-e Transparency Platform". 
+Search for "ENTSO-e" when adding HACS integrations and add "ENTSO-e Transparency Platform".
 
-Or use this link to go directly there: [![Or use this link.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=JaccoR&repository=hass-entso-e&category=integration) 
+Or use this link to go directly there: [![Or use this link.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=JaccoR&repository=hass-entso-e&category=integration)
 
-Restart Home Assistant and add the integration through Settings. 
+Restart Home Assistant and add the integration through Settings.
 
 ### Manual
-Download this repository and place the contents of `custom_components` in your own `custom_components` map of your Home Assistant installation. Restart Home Assistant and add the integration through your settings. 
+Download this repository and place the contents of `custom_components` in your own `custom_components` map of your Home Assistant installation. Restart Home Assistant and add the integration through your settings.
 
 ------
 ## Configuration
@@ -43,7 +43,7 @@ The sensors can be added using the integration page.
 #### Add integration
 
 1. Go to Settings => Devices and Services
-2. Click the button "+ Add integration". 
+2. Click the button "+ Add integration".
 2. Search for "entso
 3. Click on the Entso-e to start te configuration flow.
 
@@ -124,7 +124,7 @@ series:
     opacity: 1
     color: ''
     data_generator: |
-      return entity.attributes.prices.map((entry) => { 
+      return entity.attributes.prices.map((entry) => {
       return [new Date(entry.time), entry.price];
       });
 
@@ -135,5 +135,5 @@ series:
 
 #### Updates
 
-The integration is in an early state and receives a lot of updates. If you already setup this integration and encounter an error after updating, please try redoing the above installation steps. 
+The integration is in an early state and receives a lot of updates. If you already setup this integration and encounter an error after updating, please try redoing the above installation steps.
 

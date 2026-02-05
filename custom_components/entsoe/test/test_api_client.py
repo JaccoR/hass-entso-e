@@ -1,12 +1,12 @@
-import unittest
-
-import sys
 import os
+import sys
+import unittest
 
 sys.path.append(os.path.abspath("..\\"))
 
-from api_client import EntsoeClient
 from datetime import datetime
+
+from ..api_client import EntsoeClient  # noqa: TID252
 
 
 class TestDocumentParsing(unittest.TestCase):
@@ -17,7 +17,7 @@ class TestDocumentParsing(unittest.TestCase):
         return super().setUp()
 
     def test_be_60m(self):
-        with open(".\\datasets\\BE_60M.xml") as f:
+        with open("./datasets/BE_60M.xml") as f:
             data = f.read()
 
         self.maxDiff = None
@@ -75,7 +75,7 @@ class TestDocumentParsing(unittest.TestCase):
                 datetime.fromisoformat("2024-10-06T10:00:00Z"): 5.25,
                 datetime.fromisoformat("2024-10-06T11:00:00Z"): -0.01,
                 datetime.fromisoformat(
-                    "2024-10-06T12:00:00Z"
+                    "2024-10-06T12:00:00Z",
                 ): -0.01,  # repeated value, not present in the dataset!
                 datetime.fromisoformat("2024-10-06T13:00:00Z"): 0.2,
                 datetime.fromisoformat("2024-10-06T14:00:00Z"): 48.4,
@@ -163,7 +163,7 @@ class TestDocumentParsing(unittest.TestCase):
                 datetime.fromisoformat("2024-10-06T10:00:00Z"): 5.25,
                 datetime.fromisoformat("2024-10-06T11:00:00Z"): -0.01,
                 datetime.fromisoformat(
-                    "2024-10-06T12:00:00Z"
+                    "2024-10-06T12:00:00Z",
                 ): -0.01,  # repeated value, not present in the dataset!
                 datetime.fromisoformat("2024-10-06T13:00:00Z"): 0.2,
                 datetime.fromisoformat("2024-10-06T14:00:00Z"): 59.6,

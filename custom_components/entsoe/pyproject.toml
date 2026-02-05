@@ -1,0 +1,11 @@
+[tool.ruff.lint]
+ignore = [
+    # Ignore some rules, since they require a lot of reformatting
+    "ANN", "D", "PTH123", "PTH100", "PT009", "N802", "E501", "PLR2004", "FBT002", "N803", "PLR0913", "N806", "ARG004", "S314", "N818",
+    "G004", # Logging with f-strings is fine
+    "BLE001" # We want to be able to catch-all
+
+]
+select = ["ALL"]
+
+

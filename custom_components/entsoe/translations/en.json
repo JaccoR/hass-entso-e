@@ -23,8 +23,8 @@
       }
     },
     "error": {
-      "invalid_template": "Invalid template, check https://github.com/JaccoR/hass-entso-e",
-      "missing_current_price": "'current_price' is missing from the template, check https://github.com/JaccoR/hass-entso-e",
+      "invalid_template": "Invalid template",
+      "missing_current_price": "'current_price' is missing from the template",
       "already_configured": "Integration instance with the same name already exists"
     }
   },
@@ -44,8 +44,8 @@
       }
     },
     "error": {
-      "invalid_template": "Invalid Template, Check https://github.com/JaccoR/hass-entso-e",
-      "missing_current_price": "'current_price' is missing from the template, check https://github.com/JaccoR/hass-entso-e",
+      "invalid_template": "Invalid Template",
+      "missing_current_price": "'current_price' is missing from the template",
       "already_configured": "Integration instance with the same name already exists"
     }
   },

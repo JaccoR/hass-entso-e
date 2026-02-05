@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import logging
 import threading
-from datetime import timedelta
+
+from datetime import datetime, timedelta
 from functools import cached_property
 
 import async_timeout
@@ -329,6 +330,42 @@ class EntsoeCoordinator(DataUpdateCoordinator):
             sum(self._filtered_prices.values()) / len(self._filtered_prices.values()),
             5,
         )
+
+    def lowest_period(self, period_hours: float) -> tuple[datetime, datetime]:
+        """Find the consecutive period of `period_hours` with the lowest average price."""
+        prices = sorted(self._filtered_prices.items())  # [(timestamp, price), ...]
+        window_start = 0
+        current_sum = 0
+        min_avg = float('inf')
+        best_start = None
+        best_end = None
+
+        for window_end in range(len(prices)):
+            current_sum += prices[window_end][1]
+
+            # Shrink window if > period_hours
+            while prices[window_end][0] - prices[window_start][0] > timedelta(hours=period_hours):
+                current_sum -= prices[window_start][1]
+                window_start += 1
+
+            # Check if window covers at least period_hours
+            if prices[window_end][0] - prices[window_start][0] >= timedelta(hours=period_hours):
+                count = window_end - window_start + 1
+                avg = current_sum / count
+                if avg < min_avg:
+                    min_avg = avg
+                    best_start = prices[window_start][0]
+                    best_end = prices[window_end][0]
+
+        return best_start, best_end
+
+
+    def in_lowest_period(self, period_hours: float) -> bool:
+        """Check if current time is within the lowest average price period of given hours."""
+        start, end = self.lowest_period(period_hours)
+        if start and end:
+            return start <= dt.now() <= end
+        return False
 
     # ANALYSIS: Get percentage of current price relative to maximum of filtered period
     def get_percentage_of_max(self):

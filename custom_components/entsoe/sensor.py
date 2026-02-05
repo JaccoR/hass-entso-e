@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import logging
+import logging, re
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
@@ -129,6 +129,43 @@ def sensor_descriptions(
             icon="mdi:clock",
             value_fn=lambda coordinator: coordinator.get_min_time(),
         ),
+        EntsoeEntityDescription(
+            key="in_lowest_1hour_period",
+            name="In lowest 1-hour price period",
+            icon="mdi:clock-check",
+            value_fn=lambda coordinator: coordinator.in_lowest_period(1),
+        ),
+        EntsoeEntityDescription(
+            key="in_lowest_2hour_period",
+            name="In lowest 2-hour price period",
+            icon="mdi:clock-check",
+            value_fn=lambda coordinator: coordinator.in_lowest_period(2),
+        ),
+        EntsoeEntityDescription(
+            key="in_lowest_3hour_period",
+            name="In lowest 3-hour price period",
+            icon="mdi:clock-check",
+            value_fn=lambda coordinator: coordinator.in_lowest_period(3),
+        ),
+        EntsoeEntityDescription(
+            key="in_lowest_4hour_period",
+            name="In lowest 4-hour price period",
+            icon="mdi:clock-check",
+            value_fn=lambda coordinator: coordinator.in_lowest_period(4),
+        ),
+        EntsoeEntityDescription(
+            key="in_lowest_5hour_period",
+            name="In lowest 5-hour price period",
+            icon="mdi:clock-check",
+            value_fn=lambda coordinator: coordinator.in_lowest_period(5),
+        ),
+        EntsoeEntityDescription(
+            key="in_lowest_6hour_period",
+            name="In lowest 6-hour price period",
+            icon="mdi:clock-check",
+            value_fn=lambda coordinator: coordinator.in_lowest_period(6),
+        ),
+
     )
 
 
@@ -267,7 +304,32 @@ class EntsoeSensor(CoordinatorEntity, RestoreSensor):
                 }
                 _LOGGER.debug(
                     f"attributes updated: {self._attr_extra_state_attributes}"
-                )
+                )        
+
+            if self.description.key.startswith("in_lowest_") and self.description.key.endswith("hour_period"):
+                # Extract the number of hours from the key using regex
+                match = re.search(r"in_lowest_(\d+)hour_period", self.description.key)
+                if match:
+                    period_hours = int(match.group(1))
+                    start, end = self.coordinator.lowest_period(period_hours)
+
+                    # Calculate the average price for that period
+                    avg_price = None
+                    if start and end:
+                        prices_in_period = {
+                            ts: price for ts, price in self.coordinator._filtered_prices.items()
+                            if start <= ts <= end
+                        }
+                        if prices_in_period:
+                            avg_price = round(sum(prices_in_period.values()) / len(prices_in_period), 5)
+
+                    self._attr_extra_state_attributes = {
+                        "lowest_period_start": start.isoformat() if start else None,
+                        "lowest_period_end": end.isoformat() if end else None,
+                        "lowest_period_avg_price": avg_price,
+                    }
+
+
         except Exception as exc:
             _LOGGER.warning(
                 f"Unable to update attributes of the average entity, error: {exc}, data: {self.coordinator.data}"

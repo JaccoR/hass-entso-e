@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-import threading
+import asyncio
 from datetime import timedelta
 from functools import cached_property
 
@@ -51,7 +51,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         self.vat = VAT
         self.calculator_last_sync = None
         self.filtered_hourprices = []
-        self.lock = threading.Lock()
+        self.lock = asyncio.Lock()
 
         # Check incase the sensor was setup using config flow.
         # This blow up if the template isnt valid.
@@ -248,7 +248,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
     async def sync_calculator(self):
         now = dt.now()
         bucket = self.current_bucket_time
-        with self.lock:
+        async with self.lock:
             if (
                 self.calculator_last_sync is None
                 or self.calculator_last_sync != bucket

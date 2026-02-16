@@ -20,7 +20,8 @@ The integration adds the following sensors:
 - Next Hour Day-Ahead Electricity Price
 - Time Of Highest Energy Price Today
 - Time Of Lowest Energy Price Today
-  
+- Current Price Level - Classifies the current electricity price relative to today's average
+
 ------
 ## Installation
 
@@ -130,6 +131,25 @@ series:
 
 ```
 
+------
+
+### Price Level Classification
+The Current Price Level sensor classifies prices based on their percentage relative to the daily average, making it ideal for device automation:
+
+| Level | Threshold | Description |
+|:------|:----------|:------------|
+| Very Cheap | ≤ 60% | Price is 60% or less of daily average |
+| Cheap | > 60% and ≤ 90% | Price is between 60% and 90% of daily average |
+| Normal | > 90% and < 115% | Price is between 90% and 115% of daily average |
+| Expensive | ≥ 115% and < 140% | Price is between 115% and 140% of daily average |
+| Very Expensive | ≥ 140% | Price is 140% or more of daily average |
+
+**Note:** Each day (today and tomorrow) is evaluated independently using its own average, providing more accurate classifications for device automation.
+
+The sensor includes attributes with:
+- `current_percentage`: Current price as percentage of today's average
+- `price_levels_today`: Hourly price levels for today
+- `price_levels_tomorrow`: Hourly price levels for tomorrow (when available)
 
 ------
 

@@ -68,5 +68,19 @@
         }
       }
     }
+  },
+  "entity": {
+    "sensor": {
+      "price_level": {
+        "name": "Huidig prijsniveau",
+        "state": {
+          "very_cheap": "Zeer Goedkoop",
+          "cheap": "Goedkoop",
+          "normal": "Normaal",
+          "expensive": "Duur",
+          "very_expensive": "Zeer Duur"
+        }
+      }
+    }
   }
 }

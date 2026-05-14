@@ -53,7 +53,7 @@ def sensor_descriptions(
     return (
         EntsoeEntityDescription(
             key="current_price",
-            name="Current electricity market price",
+            name="Current electricity price (all-in)",
             native_unit_of_measurement=f"{currency}/{energy_scale}",
             state_class=SensorStateClass.MEASUREMENT,
             icon="mdi:currency-eur",
@@ -61,8 +61,17 @@ def sensor_descriptions(
             value_fn=lambda coordinator: coordinator.get_current_price(),
         ),
         EntsoeEntityDescription(
+            key="current_spot_price",
+            name="Current electricity spot price",
+            native_unit_of_measurement=f"{currency}/{energy_scale}",
+            state_class=SensorStateClass.MEASUREMENT,
+            icon="mdi:currency-eur",
+            suggested_display_precision=3,
+            value_fn=lambda coordinator: coordinator.get_current_raw_price(),
+        ),
+        EntsoeEntityDescription(
             key="next_hour_price",  # Technically this is the price for the next period, which may be 15 or 60 minutes. Keeping for backwards compatibility.
-            name="Next hour electricity market price",
+            name="Next hour electricity price (all-in)",
             native_unit_of_measurement=f"{currency}/{energy_scale}",
             state_class=SensorStateClass.MEASUREMENT,
             icon="mdi:currency-eur",

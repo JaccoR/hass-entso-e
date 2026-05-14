@@ -53,6 +53,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         self.filtered_hourprices = []
         self.lock = asyncio.Lock()
         self._last_cleanup_date = None
+        self.raw_hourprices = {}
 
         # Check incase the sensor was setup using config flow.
         # This blow up if the template isnt valid.
@@ -137,6 +138,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
                 # Degraded mode returned cached data; don't re-parse already-processed prices
                 self.logger.debug("Using cached data from degraded mode")
                 return data
+            self.raw_hourprices = {k: round(v / ENERGY_SCALES[self.energy_scale], 5) for k, v in data.items()}
             parsed_data = self.parse_hourprices(data)
             self.logger.debug(
                 f"received pricing data from entso-e for {len(data)} hours"
@@ -218,13 +220,16 @@ class EntsoeCoordinator(DataUpdateCoordinator):
     # SENSOR: Get the current price
     def get_current_price(self) -> float | None:
         return self.data.get(self.current_bucket_time)
+    
+    # SENSOR: Get the current raw (unmodified) price in kWh
+    def get_current_raw_price(self) -> float | None:
+        return self.raw_hourprices.get(self.current_bucket_time)
 
     # SENSOR: Get the next hour price
     def get_next_price(self) -> float | None:
         return self.data.get(
             self.current_bucket_time + timedelta(minutes=self.period_minutes)
         )
-
     # SENSOR: Get timestamped prices of today as attribute for Average Sensor
     def get_prices_today(self):
         return self.get_timestamped_prices(self.get_data_today())
@@ -252,7 +257,8 @@ class EntsoeCoordinator(DataUpdateCoordinator):
         list = []
         for hour, price in hourprices.items():
             str_hour = str(hour)
-            list.append({"time": str_hour, "price": price})
+            entry = {"time": str_hour, "spot_price": self.raw_hourprices.get(hour), "price": price}
+            list.append(entry)
         return list
 
     # --------------------------------------------------------------------------------------------------------------------------------
@@ -290,6 +296,12 @@ class EntsoeCoordinator(DataUpdateCoordinator):
                     self.data = {
                         hour: price
                         for hour, price in self.data.items()
+                        if hour >= self.today - timedelta(days=1)
+                    }
+
+                    self.raw_hourprices = {
+                        hour: price
+                        for hour, price in self.raw_hourprices.items()
                         if hour >= self.today - timedelta(days=1)
                     }
 
@@ -413,4 +425,10 @@ class EntsoeCoordinator(DataUpdateCoordinator):
                 for k, v in data.items()
                 if k.date() >= start_date.date() and k.date() <= end_date.date()
             }
+
+        # Update raw_hourprices with the newly fetched data
+        self.raw_hourprices.update(
+            {k: round(v / ENERGY_SCALES[self.energy_scale], 5) for k, v in data.items()}
+        )
+
         return self.parse_hourprices(data)

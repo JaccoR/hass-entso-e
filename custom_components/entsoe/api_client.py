@@ -43,7 +43,7 @@ class EntsoeClient:
         }
         params.update(base_params)
 
-        timeout = aiohttp.ClientTimeout(total=10, connect=5)
+        timeout = aiohttp.ClientTimeout(total=30, connect=15)
         last_error = None
         for url in API_URLS:
             _LOGGER.debug(f"Performing request to {url} with params {params}")

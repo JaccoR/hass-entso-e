@@ -160,7 +160,7 @@ class EntsoeCoordinator(DataUpdateCoordinator):
     # ENTSO: new prices using an async job
     async def fetch_prices(self, start_date, end_date):
         try:
-            async with async_timeout.timeout(10):
+            async with async_timeout.timeout(30):
                 client = EntsoeClient(api_key=self.api_key, period=self.period)
                 return await client.query_day_ahead_prices(
                     country_code=self.area, start=start_date, end=end_date
